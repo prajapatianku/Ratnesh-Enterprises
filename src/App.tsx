@@ -225,7 +225,7 @@ export default function App() {
     }
     setIsAdminAuthenticated(true);
     setIsAdminPortalOpen(true);
-    showToast('Admin access verified! Welcome Mr. Ratnesh & Mr. Ankit.');
+    showToast('Owner access verified! Management portal unlocked.');
   };
 
   const handleLockAdmin = () => {
@@ -237,7 +237,7 @@ export default function App() {
     setIsAdminAuthenticated(false);
     setIsAdminMode(false);
     setIsAdminPortalOpen(false);
-    showToast('Admin locked. Public visitor mode active.');
+    showToast('Owner session locked.');
   };
 
   // Cloud Database Sync (Firebase Firestore)

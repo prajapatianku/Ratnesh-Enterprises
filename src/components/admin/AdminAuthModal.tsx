@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Eye, EyeOff, ShieldCheck, X, KeyRound, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, X, AlertCircle } from 'lucide-react';
 
 interface AdminAuthModalProps {
   isOpen: boolean;
@@ -29,7 +29,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
       onAuthenticate();
       onClose();
     } else {
-      setErrorMessage('Incorrect Security PIN. Only Ratnesh Enterprises management can access admin controls.');
+      setErrorMessage('Incorrect Security PIN. Please try again.');
     }
   };
 
@@ -58,10 +58,10 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
             <Lock className="w-7 h-7" />
           </div>
           <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
-            Store Owner Sign-In
+            Owner Management Sign-In
           </h3>
           <p className="text-xs text-slate-500 mt-1 max-w-[260px]">
-            Restricted to Ratnesh Enterprises management. Enter your Security PIN to unlock stock editing & admin controls.
+            Enter your Security PIN to unlock stock editing and store controls.
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5 text-center">
-              Enter 4-Digit Security PIN
+              Enter Security PIN
             </label>
             <div className="relative">
               <input
@@ -102,16 +102,6 @@ export const AdminAuthModal: React.FC<AdminAuthModalProps> = ({
                 <span>{errorMessage}</span>
               </div>
             )}
-          </div>
-
-          <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-[11px] text-slate-600 flex items-start gap-2">
-            <KeyRound className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-semibold text-slate-900 block">Owner Confidential Access:</span>
-              <span>
-                Authorized only for Ratnesh Enterprises proprietors (Mr. Ratnesh & Mr. Ankit). Default PIN: 9931.
-              </span>
-            </div>
           </div>
 
           <div className="flex gap-2">
