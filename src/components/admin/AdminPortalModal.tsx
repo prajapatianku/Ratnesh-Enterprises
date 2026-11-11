@@ -4,7 +4,8 @@ import {
   Brand,
   ProductCategory,
   TexturePattern,
-  ShopSettings
+  ShopSettings,
+  BannerSlide
 } from '../../types';
 import {
   ShieldAlert,
@@ -28,11 +29,14 @@ import {
   Cloud,
   RefreshCw,
   Video,
-  Play
+  Play,
+  SlidersHorizontal,
+  ExternalLink
 } from 'lucide-react';
 import { getTileTextureSvg } from '../../utils/textureGenerators';
 import { compressImageFile } from '../../utils/imageCompressor';
 import { saveLocalVideoBlob } from '../../utils/videoStorage';
+import { DEFAULT_BANNER_SLIDES } from '../hero/HeroSlider';
 
 interface AdminPortalModalProps {
   isOpen: boolean;
@@ -63,9 +67,17 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'add' | 'inventory' | 'video' | 'settings' | 'backup'>('inventory');
+  const [activeTab, setActiveTab] = useState<'add' | 'inventory' | 'banners' | 'video' | 'settings' | 'backup'>('inventory');
   const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Hero Banners State
+  const [bannerSlides, setBannerSlides] = useState<BannerSlide[]>(() => {
+    return shopSettings.heroBanners && shopSettings.heroBanners.length > 0
+      ? shopSettings.heroBanners
+      : DEFAULT_BANNER_SLIDES;
+  });
+  const [bannersSaved, setBannersSaved] = useState(false);
 
   // Add Product Form State
   const [brand, setBrand] = useState<Brand>('Orientbell');
@@ -286,6 +298,45 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
     setTimeout(() => setSettingsSaved(false), 2000);
   };
 
+  const handleBannerImageFile = async (slideIndex: number, file: File) => {
+    try {
+      const compressed = await compressImageFile(file, 1600, 0.82);
+      setBannerSlides((prev) => {
+        const copy = [...prev];
+        copy[slideIndex] = {
+          ...copy[slideIndex],
+          imageUrl: compressed,
+        };
+        return copy;
+      });
+    } catch (err) {
+      console.error('Failed to compress banner image:', err);
+      alert('Could not process this image file. Please choose a JPG or PNG image.');
+    }
+  };
+
+  const handleSaveBanners = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdateSettings({
+      ...shopSettings,
+      heroBanners: bannerSlides,
+    });
+    setBannersSaved(true);
+    setTimeout(() => setBannersSaved(false), 2000);
+  };
+
+  const handleResetBanners = () => {
+    if (confirm('Reset hero banners to default showroom slides?')) {
+      setBannerSlides(DEFAULT_BANNER_SLIDES);
+      onUpdateSettings({
+        ...shopSettings,
+        heroBanners: DEFAULT_BANNER_SLIDES,
+      });
+      setBannersSaved(true);
+      setTimeout(() => setBannersSaved(false), 2000);
+    }
+  };
+
   const filteredInventory = products.filter((p) => {
     if (!inventorySearch.trim()) return true;
     const q = inventorySearch.toLowerCase();
@@ -357,7 +408,19 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
             }`}
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Add New Design (One-by-One)</span>
+            <span>+ Add New Design</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('banners')}
+            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
+              activeTab === 'banners'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Hero Sliding Banners</span>
           </button>
 
           <button
@@ -1068,6 +1131,223 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                 </button>
               </div>
             </form>
+          )}
+
+          {/* =========================================================================
+              TAB: HERO SLIDING BANNERS (CUSTOMIZE IMAGES & TEXT)
+             ========================================================================= */}
+          {activeTab === 'banners' && (
+            <div className="max-w-4xl mx-auto flex flex-col gap-6">
+              {/* Header Box */}
+              <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
+                    <SlidersHorizontal className="w-4 h-4 text-amber-700" />
+                    <span>Frontpage Hero Banners &amp; Sliding Cards</span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1 max-w-xl">
+                    Edit the headline text, subtitle, badge, and photo for each slide of the homepage carousel. Changes update live immediately!
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleResetBanners}
+                    className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                    title="Reset to original default slides"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset Defaults</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveBanners}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{bannersSaved ? 'Saved Successfully!' : 'Save All Banners'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Banners List */}
+              <div className="space-y-4">
+                {bannerSlides.map((slide, sIdx) => (
+                  <div
+                    key={slide.id || sIdx}
+                    className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col gap-4"
+                  >
+                    {/* Slide Top Bar */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">
+                          {sIdx + 1}
+                        </span>
+                        <span className="font-extrabold text-sm text-slate-900">
+                          Slide #{sIdx + 1}: {slide.title || 'Untitled Banner'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                        {slide.badge || 'Banner'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      {/* Left: Image Preview & File Upload */}
+                      <div className="lg:col-span-4 flex flex-col gap-2">
+                        <span className="text-xs font-bold text-slate-700">Slide Photo Preview:</span>
+                        <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group">
+                          <img
+                            src={slide.imageUrl}
+                            alt={slide.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <label className="px-3 py-1.5 bg-white text-slate-900 text-xs font-bold rounded-lg cursor-pointer shadow-md hover:bg-amber-50">
+                              <span>Replace Photo</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handleBannerImageFile(sIdx, f);
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Image URL input alternative */}
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-500 block mb-0.5">
+                            Or paste Image URL:
+                          </label>
+                          <input
+                            type="text"
+                            value={slide.imageUrl}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBannerSlides((prev) => {
+                                const copy = [...prev];
+                                copy[sIdx] = { ...copy[sIdx], imageUrl: val };
+                                return copy;
+                              });
+                            }}
+                            placeholder="https://images.unsplash.com/..."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-slate-800 focus:outline-none focus:border-amber-600 focus:bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Right: Text Editing Fields */}
+                      <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Title */}
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-bold text-slate-700 block mb-1">
+                            Main Heading / Title:
+                          </label>
+                          <input
+                            type="text"
+                            value={slide.title}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBannerSlides((prev) => {
+                                const copy = [...prev];
+                                copy[sIdx] = { ...copy[sIdx], title: val };
+                                return copy;
+                              });
+                            }}
+                            placeholder="e.g. Grand Vitrified Marble Slabs"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-amber-600 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Subtitle */}
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-bold text-slate-700 block mb-1">
+                            Short Description / Subtitle:
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={slide.subtitle}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBannerSlides((prev) => {
+                                const copy = [...prev];
+                                copy[sIdx] = { ...copy[sIdx], subtitle: val };
+                                return copy;
+                              });
+                            }}
+                            placeholder="1-2 sentences describing the collection or finish..."
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-600 focus:bg-white resize-none"
+                          />
+                        </div>
+
+                        {/* Badge Tag */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 block mb-1">
+                            Top Badge Tag:
+                          </label>
+                          <input
+                            type="text"
+                            value={slide.badge}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBannerSlides((prev) => {
+                                const copy = [...prev];
+                                copy[sIdx] = { ...copy[sIdx], badge: val };
+                                return copy;
+                              });
+                            }}
+                            placeholder="e.g. ORIENTBELL & ADDON"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-600 focus:bg-white"
+                          />
+                        </div>
+
+                        {/* Button Text */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-700 block mb-1">
+                            Button Text:
+                          </label>
+                          <input
+                            type="text"
+                            value={slide.ctaText}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBannerSlides((prev) => {
+                                const copy = [...prev];
+                                copy[sIdx] = { ...copy[sIdx], ctaText: val };
+                                return copy;
+                              });
+                            }}
+                            placeholder="e.g. Explore Tiles"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-600 focus:bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Sticky Save Button */}
+              <div className="sticky bottom-0 bg-white/95 backdrop-blur-md p-4 border border-slate-200 rounded-2xl shadow-lg flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Click Save to immediately update the sliding cards on the front page.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSaveBanners}
+                  className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md hover:scale-105"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{bannersSaved ? 'Saved Successfully!' : 'Save All Banners'}</span>
+                </button>
+              </div>
+            </div>
           )}
 
           {/* =========================================================================

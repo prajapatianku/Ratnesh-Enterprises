@@ -80,6 +80,18 @@ export interface QuoteItem {
   selectedSurface?: 'floor' | 'wall' | 'counter';
 }
 
+export interface BannerSlide {
+  id: string;
+  badge: string;
+  badgeBg?: string;
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaTarget: string;
+  imageUrl: string;
+  categoryFilter?: ProductCategory | 'all';
+}
+
 export interface HeroSlide {
   id: string;
   badge: string;
@@ -120,5 +132,6 @@ export interface ShopSettings {
   announcementText: string;
   discountOfferText: string;
   heroSlides?: HeroSlide[];
+  heroBanners?: BannerSlide[];
   showroomVideo?: VideoShowcaseSettings;
 }

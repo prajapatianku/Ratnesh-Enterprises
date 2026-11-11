@@ -12,7 +12,7 @@ import {
   Grid,
   CheckCircle2
 } from 'lucide-react';
-import { ShopSettings, ProductCategory } from '../../types';
+import { ShopSettings, ProductCategory, BannerSlide } from '../../types';
 
 interface HeroSliderProps {
   onOpenCalculator: () => void;
@@ -21,19 +21,7 @@ interface HeroSliderProps {
   onSelectBrandFilter?: (brand: string) => void;
 }
 
-interface BannerSlide {
-  id: string;
-  badge: string;
-  badgeBg: string;
-  title: string;
-  subtitle: string;
-  ctaText: string;
-  ctaTarget: string;
-  imageUrl: string;
-  categoryFilter?: ProductCategory | 'all';
-}
-
-const BANNER_SLIDES: BannerSlide[] = [
+export const DEFAULT_BANNER_SLIDES: BannerSlide[] = [
   {
     id: 'vitrified-slabs',
     badge: 'ORIENTBELL & ADDON',
@@ -99,21 +87,26 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
+  const bannerSlides: BannerSlide[] =
+    shopSettings.heroBanners && shopSettings.heroBanners.length > 0
+      ? shopSettings.heroBanners
+      : DEFAULT_BANNER_SLIDES;
+
   // Auto-advance banner every 4 seconds (like Flipkart / Amazon)
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+      setCurrentIndex((prev) => (prev + 1) % bannerSlides.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, bannerSlides.length]);
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+    setCurrentIndex((prev) => (prev + 1) % bannerSlides.length);
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length);
+    setCurrentIndex((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
   };
 
   const handleSlideCta = (slide: BannerSlide) => {
@@ -159,7 +152,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     touchStartX.current = null;
   };
 
-  const currentSlide = BANNER_SLIDES[currentIndex];
+  const currentSlide = bannerSlides[currentIndex] || bannerSlides[0];
 
   return (
     <div className="w-full bg-slate-50 border-b border-slate-200">
@@ -324,7 +317,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
           {/* Flipkart Dot Pagination Indicators */}
           <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
-            {BANNER_SLIDES.map((slide, idx) => (
+            {bannerSlides.map((slide, idx) => (
               <button
                 key={slide.id}
                 onClick={() => setCurrentIndex(idx)}
