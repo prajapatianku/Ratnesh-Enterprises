@@ -14,7 +14,6 @@ import { AdminAuthModal } from './components/admin/AdminAuthModal';
 import { QuoteDrawer } from './components/quote/QuoteDrawer';
 import { ShowroomShowcase } from './components/showroom/ShowroomShowcase';
 import { AboutUsSection } from './components/about/AboutUsSection';
-import { LuxuryStudioVisualizer } from './components/interactive/LuxuryStudioVisualizer';
 import { Footer } from './components/footer/Footer';
 import { MessageSquare, Sparkles, Check, ShieldCheck, Cloud } from 'lucide-react';
 import {
@@ -552,9 +551,6 @@ export default function App() {
           onOpenAdminPortal={handleOpenAdminPortal}
           isAdminAuthenticated={isAdminAuthenticated}
         />
-
-        {/* Interactive Luxury Studio Visualizer (Tiles, Marble, Washbasins & Taps) */}
-        <LuxuryStudioVisualizer shopSettings={shopSettings} />
 
         {/* Product Catalog Grid with Filters */}
         <ProductGrid

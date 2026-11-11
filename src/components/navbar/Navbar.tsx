@@ -82,35 +82,35 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 lg:gap-4 xl:gap-6">
         {/* Brand Wordmark & Logo */}
         <a
           href="/"
-          className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-2.5 group"
+          className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-2 group min-w-fit"
         >
           <img
             src="/assets/aistudio/image_7777a093.png"
             alt="Ratnesh Enterprises"
-            className="h-10 w-10 object-contain rounded-lg bg-white p-0.5 border border-slate-300 shadow-xs group-hover:scale-105 transition-transform"
+            className="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-lg bg-white p-0.5 border border-slate-300 shadow-xs group-hover:scale-105 transition-transform shrink-0"
           />
           <div className="flex flex-col text-left">
-            <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 leading-none">
+            <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 leading-tight">
               {shopSettings.shopName || 'Ratnesh Enterprises'}
             </span>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-amber-700 mt-0.5">
-              Tiles & Sanitaryware
+            <span className="text-[10px] uppercase font-bold tracking-wider text-amber-700">
+              Tiles &amp; Sanitaryware
             </span>
           </div>
         </a>
 
-        {/* Navigation links */}
-        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600">
+        {/* Navigation links (responsive spacing for laptop & desktop) */}
+        <nav className="hidden lg:flex items-center gap-3.5 xl:gap-5 text-xs xl:text-sm font-medium text-slate-600">
           <a
             href="#brands"
             onClick={(e) => handleNavClick(e, 'brands')}
             className="hover:text-amber-700 transition-colors whitespace-nowrap shrink-0 font-semibold text-slate-800 cursor-pointer"
           >
-            Brand Partners
+            Brands
           </a>
           <a
             href="#catalog"
@@ -119,7 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               activeCategory === 'tiles' ? 'text-amber-700 font-bold' : 'hover:text-amber-700'
             }`}
           >
-            Tiles Catalog
+            Tiles
           </a>
           <a
             href="#catalog"
@@ -140,18 +140,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             Bath Fittings
           </a>
           <a
-            href="#about-us"
-            onClick={(e) => handleNavClick(e, 'about-us')}
-            className="hover:text-amber-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            Who We Are
-          </a>
-          <a
             href="#video-tour"
             onClick={(e) => handleNavClick(e, 'video-tour')}
             className="hover:text-amber-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer font-medium text-amber-800"
           >
             Video Tour
+          </a>
+          <a
+            href="#about-us"
+            onClick={(e) => handleNavClick(e, 'about-us')}
+            className="hover:text-amber-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            About Us
           </a>
           <a
             href="#showroom-story"
@@ -163,7 +163,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Actions (Phone Call + Calculator + Admin) */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <a
             href={`tel:${shopSettings.phoneNumber.replace(/\s+/g, '')}`}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:text-amber-800 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors whitespace-nowrap shrink-0"

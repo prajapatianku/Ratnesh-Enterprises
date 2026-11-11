@@ -8,10 +8,9 @@ import {
   Layers,
   Bath,
   Droplets,
-  Building2,
-  CheckCircle2,
-  ShieldCheck,
-  Eye
+  Video,
+  Grid,
+  CheckCircle2
 } from 'lucide-react';
 import { ShopSettings, ProductCategory } from '../../types';
 
@@ -22,97 +21,72 @@ interface HeroSliderProps {
   onSelectBrandFilter?: (brand: string) => void;
 }
 
-interface ShowcaseCard {
+interface BannerSlide {
   id: string;
   badge: string;
-  category: 'tiles' | 'sanitary' | 'fittings' | 'showroom';
+  badgeBg: string;
   title: string;
   subtitle: string;
-  highlights: string[];
   ctaText: string;
   ctaTarget: string;
-  secondaryCtaText?: string;
-  secondaryCtaTarget?: string;
   imageUrl: string;
-  accentColor: string;
-  materialTag: string;
+  categoryFilter?: ProductCategory | 'all';
 }
 
-const SHOWCASE_CARDS: ShowcaseCard[] = [
+const BANNER_SLIDES: BannerSlide[] = [
   {
-    id: 'marble-slabs',
-    badge: 'ITALIAN MARBLE & VITRIFIED',
-    category: 'tiles',
-    title: 'Grand Vitrified Slabs & Marble Finishes',
-    subtitle: 'Statuario, Calacatta & Carving Veins in 600x1200 mm & large formats.',
-    highlights: ['Nano-Glaze Mirror Polish', 'Zero Stain Absorption (<0.05%)', '10-Year Structural Warranty'],
-    ctaText: 'Explore Vitrified Slabs',
+    id: 'vitrified-slabs',
+    badge: 'ORIENTBELL & ADDON',
+    badgeBg: 'bg-amber-500 text-slate-950',
+    title: 'Grand Vitrified Marble Slabs',
+    subtitle: '600x1200 mm & large format PGVT tiles with high-gloss mirror polish for luxury floors & walls.',
+    ctaText: 'Explore Tiles',
     ctaTarget: '#catalog',
-    secondaryCtaText: 'Tile Box Calculator',
-    secondaryCtaTarget: 'calculator',
-    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85',
-    accentColor: 'from-amber-600/90 to-amber-950/95',
-    materialTag: 'Glazed Vitrified (PGVT / GVT)',
+    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+    categoryFilter: 'tiles',
   },
   {
-    id: 'designer-washbasins',
-    badge: 'ARTISAN CERAMIC COLLECTION',
-    category: 'sanitary',
-    title: 'Microvit Designer Table-Top Washbasins',
-    subtitle: 'Matte fluted ceramics, marble-veined bowls & gold-rim art basins.',
-    highlights: ['Anti-Bacterial Glaze', 'Deep Anti-Splash Bowl Geometry', 'Soft-Close One-Piece Closets'],
+    id: 'designer-basins',
+    badge: 'MICROVIT SANITARY',
+    badgeBg: 'bg-emerald-500 text-slate-950',
+    title: 'Artisan Designer Washbasins',
+    subtitle: 'Matte fluted ceramics, gold-veined marble bowls & countertop vanity basins.',
     ctaText: 'View Washbasins',
     ctaTarget: '#catalog',
-    secondaryCtaText: 'WhatsApp Price List',
-    secondaryCtaTarget: 'whatsapp',
-    imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=85',
-    accentColor: 'from-emerald-700/90 to-slate-950/95',
-    materialTag: 'High-Density Vitreous China',
+    imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85',
+    categoryFilter: 'sanitary',
   },
   {
-    id: 'luxury-faucets-taps',
-    badge: 'FORGED BRASS PRECISION',
-    category: 'fittings',
-    title: 'Juliet & Polo Luxury Taps & Diverters',
-    subtitle: 'High-flow concealed diverters, tall body basin mixers & spouts.',
-    highlights: ['Solid Heavy Brass Body', 'Triple-Layer Mirror Chrome', 'Smooth Ceramic Disc Cartridge'],
+    id: 'luxury-taps',
+    badge: 'JULIET & POLO FITTINGS',
+    badgeBg: 'bg-blue-500 text-white',
+    title: 'Precision Brass Taps & Diverters',
+    subtitle: 'Heavy forged brass, mirror chrome & concealed diverter systems for modern bathrooms.',
     ctaText: 'Browse Bath Taps',
     ctaTarget: '#catalog',
-    secondaryCtaText: 'Wholesale Inquiry',
-    secondaryCtaTarget: 'whatsapp',
-    imageUrl: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1200&q=85',
-    accentColor: 'from-blue-700/90 to-slate-950/95',
-    materialTag: 'Lead-Free Brass Alloys',
+    imageUrl: 'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&w=1600&q=85',
+    categoryFilter: 'fittings',
   },
   {
     id: 'rain-showers',
     badge: 'LUXURY SHOWER SUITES',
-    category: 'fittings',
-    title: 'Ceiling Rain Showers & Body Jet Panels',
-    subtitle: '12-inch ultra-slim stainless steel rain heads & thermostatic valves.',
-    highlights: ['Self-Cleaning Silicon Nozzles', 'Air-Injection Mist & Rain Flow', 'Matte Black & PVD Gold Available'],
-    ctaText: 'View Shower Panels',
+    badgeBg: 'bg-cyan-500 text-slate-950',
+    title: 'Ceiling Rain Showers & Jet Panels',
+    subtitle: 'Ultra-slim SS-304 rain heads with air-injection mist and waterfall flow.',
+    ctaText: 'View Rain Showers',
     ctaTarget: '#catalog',
-    secondaryCtaText: 'Tile Calculator',
-    secondaryCtaTarget: 'calculator',
-    imageUrl: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1200&q=85',
-    accentColor: 'from-cyan-700/90 to-slate-950/95',
-    materialTag: 'SS-304 & Precision Brass',
+    imageUrl: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1600&q=85',
+    categoryFilter: 'fittings',
   },
   {
-    id: 'showroom-experience',
-    badge: 'VISIT OUR EXPERIENCE STUDIO',
-    category: 'showroom',
-    title: 'Touch Real Textures in Jainamore, Bokaro',
-    subtitle: 'Over 1,000+ live slab displays, basins and luxury bath setups in stock.',
-    highlights: ['Authorized Brand Pricing', 'Compare Finishes Under True Light', 'Safe Site Hydraulic Delivery'],
+    id: 'real-showroom',
+    badge: 'EXPERIENCE STUDIO',
+    badgeBg: 'bg-purple-500 text-white',
+    title: 'Visit 1,000+ Live Tile & Bath Displays',
+    subtitle: 'Touch real textures and compare finishes at our flagship showroom in Bokaro.',
     ctaText: 'Watch Showroom Video',
     ctaTarget: '#video-tour',
-    secondaryCtaText: 'Get Map Directions',
-    secondaryCtaTarget: 'maps',
     imageUrl: '/assets/aistudio/20261010_152610_fbe3c357.jpg',
-    accentColor: 'from-slate-800/90 to-slate-950/95',
-    materialTag: 'Flagship Showroom Bokaro',
   },
 ];
 
@@ -121,46 +95,55 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   shopSettings,
   onSelectCategory,
 }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  // Auto-advance card slider every 4.5 seconds
+  // Auto-advance banner every 4 seconds (like Flipkart / Amazon)
   useEffect(() => {
     if (isPaused) return;
-    const timer = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % SHOWCASE_CARDS.length);
-    }, 4500);
-    return () => clearInterval(timer);
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+    }, 4000);
+    return () => clearInterval(interval);
   }, [isPaused]);
 
   const handleNext = () => {
-    setActiveIndex((prev) => (prev + 1) % SHOWCASE_CARDS.length);
+    setCurrentIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
   };
 
   const handlePrev = () => {
-    setActiveIndex((prev) => (prev - 1 + SHOWCASE_CARDS.length) % SHOWCASE_CARDS.length);
+    setCurrentIndex((prev) => (prev - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length);
   };
 
-  const handleActionClick = (target: string, e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
-    if (target === 'calculator') {
+  const handleSlideCta = (slide: BannerSlide) => {
+    if (slide.categoryFilter && onSelectCategory) {
+      onSelectCategory(slide.categoryFilter);
+    }
+    const el = document.getElementById(slide.ctaTarget.replace('#', ''));
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      window.location.hash = slide.ctaTarget;
+    }
+  };
+
+  const handleCategoryClick = (cat: ProductCategory | 'all' | 'calculator' | 'video') => {
+    if (cat === 'calculator') {
       onOpenCalculator();
-    } else if (target === 'whatsapp') {
-      const text = encodeURIComponent(
-        `Hello ${shopSettings.shopName}! I would like to inquire about tile prices, sanitary basins, and bath fittings.`
-      );
-      const num = shopSettings.whatsappNumber ? `/${shopSettings.whatsappNumber}` : '';
-      window.open(`https://wa.me${num}?text=${text}`, '_blank');
-    } else if (target === 'maps') {
-      window.open(shopSettings.googleMapsUrl || 'https://maps.google.com', '_blank');
-    } else if (target.startsWith('#')) {
-      const el = document.getElementById(target.substring(1));
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        window.location.hash = target;
-      }
+      return;
+    }
+    if (cat === 'video') {
+      const el = document.getElementById('video-tour');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (onSelectCategory) {
+      onSelectCategory(cat);
+    }
+    const catalogEl = document.getElementById('catalog');
+    if (catalogEl) {
+      catalogEl.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -170,215 +153,192 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 50) handleNext();
-    else if (diff < -50) handlePrev();
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (delta > 40) handleNext();
+    else if (delta < -40) handlePrev();
     touchStartX.current = null;
   };
 
-  const activeCard = SHOWCASE_CARDS[activeIndex];
+  const currentSlide = BANNER_SLIDES[currentIndex];
 
   return (
-    <section className="relative w-full bg-slate-950 text-white overflow-hidden py-10 sm:py-14 border-b border-slate-800">
-      {/* Background Decorative Marble Texture Glow */}
-      <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.25),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.2),transparent_50%)]" />
+    <div className="w-full bg-slate-50 border-b border-slate-200">
+      {/* =========================================================================
+          FLIPKART STYLE CATEGORY QUICK NAVIGATION BAR
+         ========================================================================= */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2">
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 sm:p-3 overflow-x-auto no-scrollbar">
+          <div className="flex items-center justify-between sm:justify-around min-w-[620px] sm:min-w-0 gap-2 sm:gap-4">
+            {/* All Products */}
+            <button
+              onClick={() => handleCategoryClick('all')}
+              className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl hover:bg-slate-50 transition-all group cursor-pointer text-center"
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-amber-100 group-hover:scale-105 transition-all border border-slate-200 shadow-2xs">
+                <Grid className="w-5 h-5 text-slate-700 group-hover:text-amber-800 transition-colors" />
+              </div>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-800 group-hover:text-amber-800 whitespace-nowrap">
+                All Catalog
+              </span>
+            </button>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Top Header: Luxury Headline & Controls */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-          <div>
-            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/15 border border-amber-400/30 px-3 py-1 rounded-full mb-2.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>MARBLE, CERAMIC &amp; POLISHED BRASS STUDIO</span>
-            </div>
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              Grand Surfaces. Designer Basins. Precision Taps.
-            </h1>
-            <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-xl">
-              Swipe or tap cards to preview luxury vitrified slabs, artisan washbasins, and high-pressure rain shower systems for modern architecture.
-            </p>
-          </div>
+            {/* Vitrified & Floor Tiles */}
+            <button
+              onClick={() => handleCategoryClick('tiles')}
+              className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl hover:bg-slate-50 transition-all group cursor-pointer text-center"
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-amber-50 flex items-center justify-center group-hover:bg-amber-200 group-hover:scale-105 transition-all border border-amber-200 shadow-2xs">
+                <Layers className="w-5 h-5 text-amber-800" />
+              </div>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-800 group-hover:text-amber-800 whitespace-nowrap">
+                Vitrified Tiles
+              </span>
+            </button>
 
-          {/* Navigation Controls */}
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs text-slate-400 font-mono">
-              <strong className="text-amber-400">0{activeIndex + 1}</strong> / 0{SHOWCASE_CARDS.length}
-            </span>
+            {/* Designer Washbasins & Sanitaryware */}
+            <button
+              onClick={() => handleCategoryClick('sanitary')}
+              className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl hover:bg-slate-50 transition-all group cursor-pointer text-center"
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-200 group-hover:scale-105 transition-all border border-emerald-200 shadow-2xs">
+                <Bath className="w-5 h-5 text-emerald-800" />
+              </div>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-800 group-hover:text-emerald-800 whitespace-nowrap">
+                Washbasins
+              </span>
+            </button>
 
-            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1">
-              <button
-                onClick={handlePrev}
-                className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer"
-                title="Previous card"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleNext}
-                className="p-2 hover:bg-slate-800 rounded-lg text-slate-300 hover:text-white transition-colors cursor-pointer"
-                title="Next card"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+            {/* Brass Taps & Fittings */}
+            <button
+              onClick={() => handleCategoryClick('fittings')}
+              className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl hover:bg-slate-50 transition-all group cursor-pointer text-center"
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-200 group-hover:scale-105 transition-all border border-blue-200 shadow-2xs">
+                <Droplets className="w-5 h-5 text-blue-800" />
+              </div>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-800 group-hover:text-blue-800 whitespace-nowrap">
+                Taps & Fittings
+              </span>
+            </button>
+
+            {/* Showroom Video Tour */}
+            <button
+              onClick={() => handleCategoryClick('video')}
+              className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl hover:bg-slate-50 transition-all group cursor-pointer text-center"
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-50 flex items-center justify-center group-hover:bg-purple-200 group-hover:scale-105 transition-all border border-purple-200 shadow-2xs">
+                <Video className="w-5 h-5 text-purple-800" />
+              </div>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-800 group-hover:text-purple-800 whitespace-nowrap">
+                Showroom Video
+              </span>
+            </button>
+
+            {/* Tile Calculator */}
+            <button
+              onClick={() => handleCategoryClick('calculator')}
+              className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl hover:bg-slate-50 transition-all group cursor-pointer text-center"
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-orange-50 flex items-center justify-center group-hover:bg-orange-200 group-hover:scale-105 transition-all border border-orange-200 shadow-2xs">
+                <Calculator className="w-5 h-5 text-orange-800" />
+              </div>
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-800 group-hover:text-orange-800 whitespace-nowrap">
+                Tile Calculator
+              </span>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* =========================================================================
-            CARD-BASED SLIDER / CAROUSEL
-           ========================================================================= */}
+      {/* =========================================================================
+          FLIPKART / AMAZON STYLE HERO SLIDING BANNER CAROUSEL
+         ========================================================================= */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 pb-4">
         <div
-          className="relative w-full"
+          className="relative w-full h-[190px] sm:h-[260px] md:h-[320px] lg:h-[350px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-slate-900 group select-none"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {/* Main Active Hero Card Showcase */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl min-h-[440px] sm:min-h-[480px]">
-            {/* Visual Image Side (7 cols on Desktop) */}
-            <div className="lg:col-span-7 relative min-h-[260px] sm:min-h-[340px] lg:min-h-full overflow-hidden">
-              <img
-                src={activeCard.imageUrl}
-                alt={activeCard.title}
-                className="w-full h-full object-cover object-center transition-all duration-700 scale-102 hover:scale-105"
-                key={activeCard.id}
-              />
+          {/* Background Image with uniform cover */}
+          <img
+            src={currentSlide.imageUrl}
+            alt={currentSlide.title}
+            className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-out"
+            key={currentSlide.id}
+          />
 
-              {/* Scrim Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-slate-900" />
+          {/* Flipkart / Amazon Gradient Scrim Overlay for 100% Text Legibility */}
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-transparent sm:via-slate-950/40" />
 
-              {/* Top-left Material Badge */}
-              <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-md border border-white/20 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold tracking-wide flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-amber-400" />
-                <span>{activeCard.materialTag}</span>
-              </div>
+          {/* Banner Text Content */}
+          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-8 md:px-12 lg:px-16 max-w-xl lg:max-w-2xl z-10">
+            {/* Pill Badge */}
+            <div className="mb-1.5 sm:mb-2.5">
+              <span className={`inline-flex items-center gap-1 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs ${currentSlide.badgeBg}`}>
+                <Sparkles className="w-3 h-3" />
+                <span>{currentSlide.badge}</span>
+              </span>
             </div>
 
-            {/* Content & Action Side (5 cols on Desktop) */}
-            <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-slate-900">
-              <div>
-                <span className="text-[11px] font-extrabold tracking-widest text-amber-400 uppercase block mb-2">
-                  {activeCard.badge}
-                </span>
+            {/* Main Title (Responsive & Never Truncated) */}
+            <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight drop-shadow-sm">
+              {currentSlide.title}
+            </h2>
 
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-snug">
-                  {activeCard.title}
-                </h2>
+            {/* Subtitle (1 clean sentence) */}
+            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-200 line-clamp-2 drop-shadow-xs max-w-md">
+              {currentSlide.subtitle}
+            </p>
 
-                <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-                  {activeCard.subtitle}
-                </p>
-
-                {/* Feature Highlights List */}
-                <div className="mt-5 space-y-2 border-t border-slate-800 pt-4">
-                  {activeCard.highlights.map((h, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-slate-200">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>{h}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center gap-3">
-                <button
-                  onClick={(e) => handleActionClick(activeCard.ctaTarget, e)}
-                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 transition-all shadow-md cursor-pointer"
-                >
-                  <span>{activeCard.ctaText}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                {activeCard.secondaryCtaText && (
-                  <button
-                    onClick={(e) => handleActionClick(activeCard.secondaryCtaTarget || '#catalog', e)}
-                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-xs sm:text-sm border border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    {activeCard.secondaryCtaTarget === 'calculator' && <Calculator className="w-3.5 h-3.5 text-amber-400" />}
-                    <span>{activeCard.secondaryCtaText}</span>
-                  </button>
-                )}
-              </div>
+            {/* Flipkart Style CTA Button */}
+            <div className="mt-2.5 sm:mt-4">
+              <button
+                onClick={() => handleSlideCta(currentSlide)}
+                className="inline-flex items-center gap-1.5 bg-white text-slate-900 hover:bg-amber-400 font-bold px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all hover:scale-105 cursor-pointer active:scale-95"
+              >
+                <span>{currentSlide.ctaText}</span>
+                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
             </div>
           </div>
 
-          {/* Bottom Card Thumbnails / Quick Jump Strip */}
-          <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {SHOWCASE_CARDS.map((card, idx) => {
-              const isSelected = idx === activeIndex;
-              return (
-                <button
-                  key={card.id}
-                  onClick={() => setActiveIndex(idx)}
-                  className={`text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 ${
-                    isSelected
-                      ? 'bg-slate-800 border-amber-500 ring-2 ring-amber-500/30'
-                      : 'bg-slate-900/60 hover:bg-slate-800/80 border-slate-800'
-                  }`}
-                >
-                  <img
-                    src={card.imageUrl}
-                    alt={card.title}
-                    className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-700"
-                  />
-                  <div className="min-w-0">
-                    <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider block truncate">
-                      {card.category}
-                    </span>
-                    <span className="text-xs font-bold text-white truncate block">
-                      {card.title.split('&')[0]}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Quick Surface Jump Bar */}
-        <div className="mt-8 pt-6 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto text-xs">
-            <span className="text-slate-400 font-semibold mr-1">Direct Jump:</span>
-            <button
-              onClick={() => {
-                if (onSelectCategory) onSelectCategory('tiles');
-                document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 transition-colors cursor-pointer"
-            >
-              Vitrified Marble Slabs (2x4 ft)
-            </button>
-            <button
-              onClick={() => {
-                if (onSelectCategory) onSelectCategory('sanitary');
-                document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 transition-colors cursor-pointer"
-            >
-              Artisan Table-Top Basins
-            </button>
-            <button
-              onClick={() => {
-                if (onSelectCategory) onSelectCategory('fittings');
-                document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 transition-colors cursor-pointer"
-            >
-              Concealed Diverters &amp; Taps
-            </button>
-          </div>
-
+          {/* Flipkart Floating Left Arrow (<) */}
           <button
-            onClick={onOpenCalculator}
-            className="text-amber-400 hover:text-amber-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer underline"
+            onClick={handlePrev}
+            aria-label="Previous Slide"
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-all opacity-80 sm:opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer"
           >
-            <Calculator className="w-3.5 h-3.5" />
-            <span>Open Tile Box Calculator</span>
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
+
+          {/* Flipkart Floating Right Arrow (>) */}
+          <button
+            onClick={handleNext}
+            aria-label="Next Slide"
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-all opacity-80 sm:opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* Flipkart Dot Pagination Indicators */}
+          <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
+            {BANNER_SLIDES.map((slide, idx) => (
+              <button
+                key={slide.id}
+                onClick={() => setCurrentIndex(idx)}
+                aria-label={`Go to slide ${idx + 1}`}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  currentIndex === idx
+                    ? 'w-6 sm:w-8 h-1.5 sm:h-2 bg-amber-400 shadow-xs'
+                    : 'w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/60 hover:bg-white'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
