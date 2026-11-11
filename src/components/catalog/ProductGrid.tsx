@@ -103,44 +103,18 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           </p>
         </div>
 
-        {/* Shopkeeper Admin Action Bar */}
-        <div>
-          {isAdminAuthenticated ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Admin Mode Toggle */}
-              <button
-                onClick={onToggleAdminMode}
-                className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border cursor-pointer ${
-                  isAdminMode
-                    ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
-                }`}
-                title="Toggle Admin quick-edit mode"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin Mode: {isAdminMode ? 'ON' : 'OFF'}</span>
-              </button>
-
-              {/* Admin Control Portal */}
-              <button
-                onClick={onOpenAdminPortal}
-                className="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors shadow-2xs shrink-0 cursor-pointer"
-              >
-                <PlusCircle className="w-4 h-4 text-amber-700" />
-                <span>Manage Showroom Items</span>
-              </button>
-            </div>
-          ) : (
+        {/* Optional Owner Quick Action (Only visible when logged in) */}
+        {isAdminAuthenticated && (
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onOpenAdminPortal}
-              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Store Owner Login (Passcode Protected)"
+              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             >
-              <Lock className="w-3.5 h-3.5 text-amber-700" />
-              <span>Owner Login</span>
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Manage Products</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* FILTER CONTROLS BAR */}

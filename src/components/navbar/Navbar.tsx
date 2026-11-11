@@ -182,22 +182,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Tile Calculator</span>
           </button>
 
-          {/* Admin Owner Portal Button */}
+          {/* Owner Portal Discreet Icon (No full name or bulky text) */}
           {isAdminAuthenticated ? (
-            <div className="flex items-center gap-1 bg-amber-100 border border-amber-300 rounded-xl p-0.5">
+            <div className="flex items-center gap-1 bg-amber-50 border border-amber-300 rounded-xl p-0.5">
               <button
                 onClick={onOpenAdminPortal}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-amber-900 hover:text-amber-950 transition-colors cursor-pointer"
-                title="Open Owner Admin Portal"
+                className="w-8 h-8 rounded-lg bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs relative"
+                title="Owner Control Hub (Logged In)"
               >
-                <Unlock className="w-3.5 h-3.5 text-amber-700" />
-                <span>Admin</span>
+                <Unlock className="w-4 h-4" />
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
               </button>
               {onLockAdmin && (
                 <button
                   onClick={onLockAdmin}
-                  className="p-1 text-slate-500 hover:text-red-600 rounded transition-colors cursor-pointer"
-                  title="Lock / Log Out of Admin"
+                  className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-600 rounded-lg hover:bg-amber-100/70 transition-colors cursor-pointer"
+                  title="Lock Admin Session"
                 >
                   <Lock className="w-3.5 h-3.5" />
                 </button>
@@ -206,11 +206,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <button
               onClick={onOpenAdminPortal}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-all shadow-2xs shrink-0 cursor-pointer"
-              title="Store Owner Login (Password Protected)"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-300 transition-all shadow-2xs shrink-0 cursor-pointer"
+              title="Owner Control Hub"
             >
-              <Lock className="w-3.5 h-3.5 text-amber-700" />
-              <span>Owner Login</span>
+              <Lock className="w-4 h-4 text-slate-700" />
             </button>
           )}
         </div>

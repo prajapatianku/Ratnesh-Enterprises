@@ -55,6 +55,7 @@ function getEmbedUrl(url?: string): { isYouTube: boolean; embedUrl: string } {
 export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
   shopSettings,
   onUpdateSettings,
+  isAdminAuthenticated = false,
 }) => {
   const videoConfig: VideoShowcaseSettings = shopSettings.showroomVideo || {};
 
@@ -264,19 +265,21 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
             </p>
           </div>
 
-          {/* Action Buttons: Upload Video & Live WhatsApp Request */}
+          {/* Action Buttons: Live WhatsApp Request & (Owner Only) Upload Video */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              onClick={() => {
-                setTempVideoUrl(activeVideoUrl || '');
-                setIsUploadModalOpen(true);
-              }}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer hover:scale-105 active:scale-95"
-              title="Upload your own shop walkthrough video"
-            >
-              <Upload className="w-3.5 h-3.5 text-amber-400" />
-              <span>Upload Showroom Video</span>
-            </button>
+            {isAdminAuthenticated && (
+              <button
+                onClick={() => {
+                  setTempVideoUrl(activeVideoUrl || '');
+                  setIsUploadModalOpen(true);
+                }}
+                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer hover:scale-105 active:scale-95"
+                title="Upload or change showroom walkthrough video"
+              >
+                <Upload className="w-3.5 h-3.5 text-amber-400" />
+                <span>Upload Video</span>
+              </button>
+            )}
 
             <button
               onClick={handleWhatsAppVideoCallRequest}

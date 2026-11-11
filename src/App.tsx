@@ -327,6 +327,30 @@ export default function App() {
     };
   }, []);
 
+  // URL Hash (#admin) & Keyboard shortcut (Ctrl + Shift + A) for Owner Management
+  useEffect(() => {
+    const checkHash = () => {
+      if (window.location.hash === '#admin') {
+        handleOpenAdminPortal();
+      }
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        handleOpenAdminPortal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('hashchange', checkHash);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAdminAuthenticated]);
+
   // Restore showroom video from IndexedDB on startup (persists video files and URLs across reloads)
   useEffect(() => {
     let isMounted = true;
