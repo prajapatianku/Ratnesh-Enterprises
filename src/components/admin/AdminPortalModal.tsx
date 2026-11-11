@@ -34,7 +34,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { getTileTextureSvg } from '../../utils/textureGenerators';
-import { compressImageFile } from '../../utils/imageCompressor';
+import { compressImageFile, compressBannerDataUrl } from '../../utils/imageCompressor';
 import { saveLocalVideoBlob } from '../../utils/videoStorage';
 import { DEFAULT_BANNER_SLIDES } from '../hero/HeroSlider';
 
@@ -78,6 +78,14 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
       : DEFAULT_BANNER_SLIDES;
   });
   const [bannersSaved, setBannersSaved] = useState(false);
+  const [isSavingBanners, setIsSavingBanners] = useState(false);
+
+  // Keep bannerSlides synchronized if remote cloud settings arrive
+  React.useEffect(() => {
+    if (shopSettings.heroBanners && shopSettings.heroBanners.length > 0) {
+      setBannerSlides(shopSettings.heroBanners);
+    }
+  }, [shopSettings.heroBanners]);
 
   // Add Product Form State
   const [brand, setBrand] = useState<Brand>('Orientbell');
@@ -300,7 +308,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
 
   const handleBannerImageFile = async (slideIndex: number, file: File) => {
     try {
-      const compressed = await compressImageFile(file, 1600, 0.82);
+      const compressed = await compressImageFile(file, 960, 0.68);
       setBannerSlides((prev) => {
         const copy = [...prev];
         copy[slideIndex] = {
@@ -315,14 +323,38 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
     }
   };
 
-  const handleSaveBanners = (e: React.FormEvent) => {
+  const handleSaveBanners = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateSettings({
-      ...shopSettings,
-      heroBanners: bannerSlides,
-    });
-    setBannersSaved(true);
-    setTimeout(() => setBannersSaved(false), 2000);
+    setIsSavingBanners(true);
+    try {
+      // Compress all custom base64 images so they are guaranteed to fit in Firestore
+      const cleanBanners = await Promise.all(
+        bannerSlides.map(async (slide) => {
+          if (slide.imageUrl && slide.imageUrl.startsWith('data:image')) {
+            const comp = await compressBannerDataUrl(slide.imageUrl);
+            return { ...slide, imageUrl: comp };
+          }
+          return slide;
+        })
+      );
+      setBannerSlides(cleanBanners);
+      onUpdateSettings({
+        ...shopSettings,
+        heroBanners: cleanBanners,
+      });
+      setBannersSaved(true);
+      setTimeout(() => setBannersSaved(false), 2500);
+    } catch (err) {
+      console.warn('Error saving banners:', err);
+      onUpdateSettings({
+        ...shopSettings,
+        heroBanners: bannerSlides,
+      });
+      setBannersSaved(true);
+      setTimeout(() => setBannersSaved(false), 2500);
+    } finally {
+      setIsSavingBanners(false);
+    }
   };
 
   const handleResetBanners = () => {
@@ -1164,10 +1196,11 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                   <button
                     type="button"
                     onClick={handleSaveBanners}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    disabled={isSavingBanners}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                   >
                     <Check className="w-4 h-4" />
-                    <span>{bannersSaved ? 'Saved Successfully!' : 'Save All Banners'}</span>
+                    <span>{isSavingBanners ? 'Saving to Cloud...' : bannersSaved ? 'Saved Successfully!' : 'Save All Banners'}</span>
                   </button>
                 </div>
               </div>
@@ -1341,10 +1374,11 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                 <button
                   type="button"
                   onClick={handleSaveBanners}
-                  className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md hover:scale-105"
+                  disabled={isSavingBanners}
+                  className="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md hover:scale-105"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{bannersSaved ? 'Saved Successfully!' : 'Save All Banners'}</span>
+                  <span>{isSavingBanners ? 'Saving to Cloud...' : bannersSaved ? 'Saved Successfully!' : 'Save All Banners'}</span>
                 </button>
               </div>
             </div>

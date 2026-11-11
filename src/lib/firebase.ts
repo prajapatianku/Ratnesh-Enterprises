@@ -21,7 +21,7 @@ import {
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { ProductItem, ShopSettings } from '../types';
-import { compressDataUrlIfNeeded } from '../utils/imageCompressor';
+import { compressDataUrlIfNeeded, compressBannerDataUrl } from '../utils/imageCompressor';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -247,6 +247,22 @@ export async function saveSettingsToCloud(settings: ShopSettings): Promise<void>
       if (Object.keys(rawSettings.showroomVideo).length === 0) {
         delete rawSettings.showroomVideo;
       }
+    }
+
+    // Protect Firestore 1MB limit by ensuring any custom base64 hero banners are safely compressed
+    if (rawSettings.heroBanners && Array.isArray(rawSettings.heroBanners)) {
+      rawSettings.heroBanners = await Promise.all(
+        rawSettings.heroBanners.map(async (banner: any) => {
+          if (banner.imageUrl && banner.imageUrl.startsWith('data:image')) {
+            const compressed = await compressBannerDataUrl(banner.imageUrl);
+            return {
+              ...banner,
+              imageUrl: compressed,
+            };
+          }
+          return banner;
+        })
+      );
     }
 
     const payload = sanitizeForFirestore({

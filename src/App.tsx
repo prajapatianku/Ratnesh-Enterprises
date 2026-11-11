@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ProductItem, QuoteItem, ShopSettings, Brand, ProductCategory } from './types';
 import { INITIAL_PRODUCTS } from './data/initialCatalog';
 import { Navbar } from './components/navbar/Navbar';
-import { HeroSlider } from './components/hero/HeroSlider';
+import { HeroSlider, DEFAULT_BANNER_SLIDES } from './components/hero/HeroSlider';
 import { ShowroomVideoSection } from './components/video/ShowroomVideoSection';
 import { BrandShowcaseSection } from './components/brands/BrandShowcaseSection';
 import { ProductGrid } from './components/catalog/ProductGrid';
@@ -54,6 +54,7 @@ const DEFAULT_SETTINGS: ShopSettings = {
     videoTitle: 'Ratnesh Enterprises Showroom Tour',
     videoSubtitle: 'Flagship Tiles & Sanitaryware Experience in Bokaro',
   },
+  heroBanners: DEFAULT_BANNER_SLIDES,
 };
 
 export default function App() {
@@ -79,6 +80,10 @@ export default function App() {
         return {
           ...DEFAULT_SETTINGS,
           ...parsed,
+          heroBanners:
+            parsed.heroBanners && Array.isArray(parsed.heroBanners) && parsed.heroBanners.length > 0
+              ? parsed.heroBanners
+              : DEFAULT_BANNER_SLIDES,
           shopName: 'Ratnesh Enterprises',
           logoUrl: '/assets/aistudio/image_7777a093.png',
           phoneNumber:
@@ -296,6 +301,10 @@ export default function App() {
             return {
               ...prev,
               ...cloudSettings,
+              heroBanners:
+                cloudSettings.heroBanners && Array.isArray(cloudSettings.heroBanners) && cloudSettings.heroBanners.length > 0
+                  ? cloudSettings.heroBanners
+                  : (prev.heroBanners || DEFAULT_BANNER_SLIDES),
               showroomVideo: {
                 ...(prev.showroomVideo || {}),
                 ...(cloudSettings.showroomVideo || {}),
@@ -558,7 +567,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-amber-600 selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-amber-600 selection:text-white relative">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-5 z-50 bg-amber-600 text-white px-4 py-2.5 rounded-xl shadow-2xl font-bold text-xs flex items-center gap-2 animate-bounce">
@@ -579,7 +588,7 @@ export default function App() {
       />
 
       {/* Main Hero & Content */}
-      <main className="flex-1">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {/* Flipkart / Amazon Style Auto-Sliding Hero Banners + Quick Category Strip */}
         <HeroSlider
           onOpenCalculator={() => handleOpenCalculator()}

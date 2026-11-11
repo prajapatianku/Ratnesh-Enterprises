@@ -82,22 +82,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 lg:gap-4 xl:gap-6">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-3 lg:gap-4 xl:gap-6 overflow-hidden">
         {/* Brand Wordmark & Logo */}
         <a
           href="/"
-          className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 whitespace-nowrap shrink-0 flex items-center gap-2 group min-w-fit"
+          className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900 shrink-0 flex items-center gap-2 group min-w-0 max-w-[190px] xs:max-w-[240px] sm:max-w-none"
         >
           <img
             src="/assets/aistudio/image_7777a093.png"
             alt="Ratnesh Enterprises"
-            className="h-9 w-9 sm:h-10 sm:w-10 object-contain rounded-lg bg-white p-0.5 border border-slate-300 shadow-xs group-hover:scale-105 transition-transform shrink-0"
+            className="h-8 w-8 sm:h-10 sm:w-10 object-contain rounded-lg bg-white p-0.5 border border-slate-300 shadow-xs group-hover:scale-105 transition-transform shrink-0"
           />
-          <div className="flex flex-col text-left">
-            <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 leading-tight">
+          <div className="flex flex-col text-left truncate">
+            <span className="font-extrabold text-xs sm:text-base tracking-tight text-slate-900 leading-tight truncate">
               {shopSettings.shopName || 'Ratnesh Enterprises'}
             </span>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-amber-700">
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-amber-700 truncate">
               Tiles &amp; Sanitaryware
             </span>
           </div>
@@ -175,11 +175,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           <button
             onClick={onOpenCalculator}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:text-amber-800 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-800 hover:text-amber-800 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-300 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             title="Tile Box Calculator"
           >
-            <Calculator className="w-3.5 h-3.5 text-amber-700" />
-            <span>Tile Calculator</span>
+            <Calculator className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <span className="hidden xs:inline">Tile Calculator</span>
+            <span className="xs:hidden">Calculator</span>
           </button>
 
           {/* Owner Portal Discreet Icon (No full name or bulky text) */}

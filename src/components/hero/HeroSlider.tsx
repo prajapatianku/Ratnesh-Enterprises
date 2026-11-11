@@ -144,24 +144,35 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     touchStartX.current = e.touches[0].clientX;
   };
 
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current !== null) {
+      const currentX = e.touches[0].clientX;
+      const diffX = Math.abs(touchStartX.current - currentX);
+      if (diffX > 8) {
+        // Prevent horizontal gesture from scrolling the mobile browser window
+        e.stopPropagation();
+      }
+    }
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const delta = touchStartX.current - e.changedTouches[0].clientX;
-    if (delta > 40) handleNext();
-    else if (delta < -40) handlePrev();
+    if (delta > 35) handleNext();
+    else if (delta < -35) handlePrev();
     touchStartX.current = null;
   };
 
   const currentSlide = bannerSlides[currentIndex] || bannerSlides[0];
 
   return (
-    <div className="w-full bg-slate-50 border-b border-slate-200">
+    <div className="w-full max-w-full overflow-hidden bg-slate-50 border-b border-slate-200">
       {/* =========================================================================
           FLIPKART STYLE CATEGORY QUICK NAVIGATION BAR
          ========================================================================= */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2">
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 sm:p-3 overflow-x-auto no-scrollbar">
-          <div className="flex items-center justify-between sm:justify-around min-w-[620px] sm:min-w-0 gap-2 sm:gap-4">
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 pt-3 pb-2 overflow-hidden">
+        <div className="w-full max-w-full bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-2 sm:p-3 overflow-x-auto no-scrollbar touch-pan-x">
+          <div className="flex items-center justify-between sm:justify-around min-w-[560px] sm:min-w-0 gap-1.5 sm:gap-4">
             {/* All Products */}
             <button
               onClick={() => handleCategoryClick('all')}
@@ -246,12 +257,13 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       {/* =========================================================================
           FLIPKART / AMAZON STYLE HERO SLIDING BANNER CAROUSEL
          ========================================================================= */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 pb-4">
+      <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 py-2 pb-4 overflow-hidden">
         <div
-          className="relative w-full h-[190px] sm:h-[260px] md:h-[320px] lg:h-[350px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-slate-900 group select-none"
+          className="relative w-full h-[180px] xs:h-[210px] sm:h-[260px] md:h-[320px] lg:h-[350px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-slate-900 group select-none touch-pan-y"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
           onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
           {/* Background Image with uniform cover */}
@@ -266,66 +278,79 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-transparent sm:via-slate-950/40" />
 
           {/* Banner Text Content */}
-          <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-8 md:px-12 lg:px-16 max-w-xl lg:max-w-2xl z-10">
+          <div className="absolute inset-0 flex flex-col justify-center px-3.5 sm:px-8 md:px-12 lg:px-16 max-w-xl lg:max-w-2xl z-10">
             {/* Pill Badge */}
-            <div className="mb-1.5 sm:mb-2.5">
-              <span className={`inline-flex items-center gap-1 text-[10px] sm:text-xs font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs ${currentSlide.badgeBg}`}>
-                <Sparkles className="w-3 h-3" />
+            <div className="mb-1 sm:mb-2">
+              <span className={`inline-flex items-center gap-1 text-[9px] sm:text-xs font-extrabold uppercase tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full shadow-xs ${currentSlide.badgeBg}`}>
+                <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span>{currentSlide.badge}</span>
               </span>
             </div>
 
             {/* Main Title (Responsive & Never Truncated) */}
-            <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight drop-shadow-sm">
+            <h2 className="text-base sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight drop-shadow-sm line-clamp-2">
               {currentSlide.title}
             </h2>
 
             {/* Subtitle (1 clean sentence) */}
-            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-200 line-clamp-2 drop-shadow-xs max-w-md">
+            <p className="mt-0.5 sm:mt-1.5 text-[11px] sm:text-sm text-slate-200 line-clamp-2 drop-shadow-xs max-w-md">
               {currentSlide.subtitle}
             </p>
 
             {/* Flipkart Style CTA Button */}
-            <div className="mt-2.5 sm:mt-4">
+            <div className="mt-2 sm:mt-3.5">
               <button
+                type="button"
                 onClick={() => handleSlideCta(currentSlide)}
-                className="inline-flex items-center gap-1.5 bg-white text-slate-900 hover:bg-amber-400 font-bold px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all hover:scale-105 cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 bg-white text-slate-900 hover:bg-amber-400 font-bold px-3 py-1 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all hover:scale-105 cursor-pointer active:scale-95"
               >
                 <span>{currentSlide.ctaText}</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>
 
           {/* Flipkart Floating Left Arrow (<) */}
           <button
-            onClick={handlePrev}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrev();
+            }}
             aria-label="Previous Slide"
-            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-all opacity-80 sm:opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer"
+            className="absolute left-1.5 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/45 hover:bg-black/65 sm:bg-white/90 sm:hover:bg-white text-white sm:text-slate-800 shadow-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer active:scale-90"
           >
             <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
           {/* Flipkart Floating Right Arrow (>) */}
           <button
-            onClick={handleNext}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNext();
+            }}
             aria-label="Next Slide"
-            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center transition-all opacity-80 sm:opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer"
+            className="absolute right-1.5 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/45 hover:bg-black/65 sm:bg-white/90 sm:hover:bg-white text-white sm:text-slate-800 shadow-md flex items-center justify-center transition-all opacity-85 sm:opacity-0 group-hover:opacity-100 hover:scale-110 cursor-pointer active:scale-90"
           >
             <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
 
           {/* Flipkart Dot Pagination Indicators */}
-          <div className="absolute bottom-2.5 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
+          <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
             {bannerSlides.map((slide, idx) => (
               <button
-                key={slide.id}
-                onClick={() => setCurrentIndex(idx)}
+                key={slide.id || idx}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(idx);
+                }}
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
                   currentIndex === idx
-                    ? 'w-6 sm:w-8 h-1.5 sm:h-2 bg-amber-400 shadow-xs'
-                    : 'w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/60 hover:bg-white'
+                    ? 'w-5 sm:w-8 h-1.5 sm:h-2 bg-amber-400 shadow-xs'
+                    : 'w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/70 hover:bg-white'
                 }`}
               />
             ))}
