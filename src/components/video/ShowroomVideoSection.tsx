@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ShopSettings, VideoShowcaseSettings } from '../../types';
 import { saveLocalVideoBlob, getLocalVideoBlob, deleteLocalVideoBlob } from '../../utils/videoStorage';
+import { uploadVideoToCloudStorage } from '../../lib/firebase';
 
 interface ShowroomVideoSectionProps {
   shopSettings: ShopSettings;
@@ -83,6 +84,9 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
     videoConfig.videoSubtitle || 'Flagship Tiles & Sanitaryware Experience in Bokaro'
   );
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -156,13 +160,13 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 250 * 1024 * 1024) {
-        alert('Video file is larger than 250MB. Please choose a smaller video or paste a YouTube link.');
+      if (file.size > 200 * 1024 * 1024) {
+        alert('Video file is larger than 200MB. Please choose a smaller video or paste a YouTube link.');
         return;
       }
+      setSelectedFile(file);
       setSelectedFileName(file.name);
-      // Immediately persist to IndexedDB
-      await saveLocalVideoBlob('showroom_video', file);
+      setUploadError('');
       // Create session-valid blob URL for instant preview
       const blobUrl = URL.createObjectURL(file);
       setTempVideoUrl(blobUrl);
@@ -172,13 +176,30 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
   const handleSaveVideoSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    setUploadError('');
 
     let finalVideoUrl = tempVideoUrl;
 
-    if (uploadTab === 'url') {
+    if (uploadTab === 'device' && selectedFile) {
+      try {
+        setUploadProgress(15);
+        // Upload to Firebase Cloud Storage so all phones, laptops, and visitors can stream it
+        const cloudUrl = await uploadVideoToCloudStorage(selectedFile, (progress) => {
+          setUploadProgress(progress);
+        });
+        finalVideoUrl = cloudUrl;
+      } catch (err: any) {
+        console.warn('Firebase Cloud Storage upload failed, saving to local device:', err);
+        // Fallback to local storage on this machine
+        await saveLocalVideoBlob('showroom_video', selectedFile);
+        finalVideoUrl = tempVideoUrl;
+        setUploadError(
+          'Cloud storage direct upload was blocked or timed out. Saved locally on this computer. Tip: For permanent streaming across ALL phones, paste a free YouTube video link!'
+        );
+      }
+    } else if (uploadTab === 'url') {
       if (tempVideoUrl && tempVideoUrl.trim().length > 0) {
         finalVideoUrl = tempVideoUrl.trim();
-        // Also persist URL to IndexedDB so it's always preserved locally
         await saveLocalVideoBlob('showroom_video', finalVideoUrl);
       }
     }
@@ -218,8 +239,11 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
     setSaveSuccess(true);
     setTimeout(() => {
       setSaveSuccess(false);
-      setIsUploadModalOpen(false);
-    }, 1000);
+      setUploadProgress(null);
+      if (!uploadError) {
+        setIsUploadModalOpen(false);
+      }
+    }, 1500);
   };
 
   const handleResetToDefaultVideo = async () => {
@@ -365,29 +389,29 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
         </div>
 
         {/* Showroom Visit Location Pill */}
-        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl px-5 py-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-700">
+        <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 bg-white border border-slate-200 rounded-xl p-3 sm:px-5 sm:py-3 text-xs w-full max-w-full overflow-hidden">
+          <div className="flex items-center gap-2 text-slate-700 min-w-0 w-full sm:w-auto overflow-hidden">
             <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="font-semibold text-slate-900 truncate">
+            <span className="font-semibold text-slate-900 truncate text-[11px] sm:text-xs min-w-0">
               {shopSettings.address}
             </span>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto justify-between sm:justify-end text-[11px] sm:text-xs pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
             <a
               href={shopSettings.googleMapsUrl || 'https://maps.google.com'}
               target="_blank"
               rel="noreferrer"
-              className="text-amber-700 hover:text-amber-800 font-bold underline"
+              className="text-amber-700 hover:text-amber-800 font-bold underline whitespace-nowrap"
             >
-              Open in Google Maps →
+              Google Maps →
             </a>
             <span className="text-slate-300">|</span>
             <a
               href={`tel:${(shopSettings.phoneNumber || '+91 87094 89716').replace(/\s+/g, '')}`}
-              className="text-slate-700 hover:text-slate-900 font-semibold flex items-center gap-1"
+              className="text-slate-700 hover:text-slate-900 font-semibold flex items-center gap-1 whitespace-nowrap font-mono"
             >
-              <Phone className="w-3 h-3 text-amber-600" />
+              <Phone className="w-3 h-3 text-amber-600 shrink-0" />
               <span>{shopSettings.phoneNumber}</span>
             </a>
           </div>
@@ -417,7 +441,7 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                     Upload Showroom Video
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Save your showroom walkthrough video permanently on this device.
+                    Save your showroom video to the cloud so all mobile and laptop visitors can see it.
                   </p>
                 </div>
               </div>
@@ -435,17 +459,6 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
               <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
                 <button
                   type="button"
-                  onClick={() => setUploadTab('device')}
-                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    uploadTab === 'device'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Upload Video File (MP4/WebM)
-                </button>
-                <button
-                  type="button"
                   onClick={() => setUploadTab('url')}
                   className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
                     uploadTab === 'url'
@@ -453,19 +466,30 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  YouTube / Video Link
+                  ⭐ YouTube Link (Fastest &amp; Best)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUploadTab('device')}
+                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    uploadTab === 'device'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Upload MP4 File
                 </button>
               </div>
 
               {/* Option 1: File Upload */}
               {uploadTab === 'device' && (
-                <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-amber-500 transition-colors bg-slate-50">
+                <div className="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:border-amber-500 transition-colors bg-slate-50">
                   <Upload className="w-8 h-8 text-amber-600 mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-900">
-                    Select a video from your computer or phone
+                    Select showroom MP4 video from device
                   </p>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Saved permanently in IndexedDB. Persists across browser reloads!
+                    Uploads directly to Firebase Cloud Storage so all mobile visitors can stream it.
                   </p>
                   <label className="mt-3 inline-block px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-xs">
                     <span>Browse Video File</span>
@@ -477,8 +501,29 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                     />
                   </label>
                   {selectedFileName && (
-                    <p className="mt-2 text-xs font-semibold text-emerald-700">
-                      ✓ Ready to save: {selectedFileName}
+                    <div className="mt-3 text-left bg-white p-3 rounded-lg border border-slate-200">
+                      <p className="text-xs font-semibold text-emerald-700 truncate">
+                        ✓ Selected: {selectedFileName}
+                      </p>
+                      {uploadProgress !== null && (
+                        <div className="mt-2 space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-600">
+                            <span>Uploading to Firebase Cloud...</span>
+                            <span>{uploadProgress}%</span>
+                          </div>
+                          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-amber-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {uploadError && (
+                    <p className="mt-2 text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                      {uploadError}
                     </p>
                   )}
                 </div>

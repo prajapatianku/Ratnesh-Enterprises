@@ -50,20 +50,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs transition-colors">
       {/* Top Address & Google Maps Navigation Ribbon */}
-      <div className="bg-slate-100 border-b border-slate-200 py-1.5 px-3 sm:px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-[11px] sm:text-xs">
+      <div className="bg-slate-100 border-b border-slate-200 py-1.5 px-2.5 sm:px-6 w-full max-w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 text-[11px] sm:text-xs min-w-0 w-full overflow-hidden">
           <a
             href={directMapsUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 text-slate-700 hover:text-amber-700 transition-colors group truncate"
+            className="flex items-center gap-1.5 sm:gap-2 text-slate-700 hover:text-amber-700 transition-colors group min-w-0 truncate"
             title="Click to open showroom in Google Maps directly"
           >
             <span className="inline-flex items-center gap-1 font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shrink-0">
               <MapPin className="w-3 h-3 text-amber-700" />
               <span>Showroom:</span>
             </span>
-            <span className="underline underline-offset-2 decoration-amber-600/50 group-hover:decoration-amber-700 font-medium truncate text-slate-800">
+            <span className="underline underline-offset-2 decoration-amber-600/50 group-hover:decoration-amber-700 font-medium truncate text-slate-800 min-w-0">
               {shopSettings.address ||
                 "Prajapati Dharamshala, Jaridih Rd, Teacher's Colony, Jena, Bokaro Steel City, Bandhdih, Jharkhand 829301"}
             </span>

@@ -19,6 +19,12 @@ import {
   onAuthStateChanged,
   User
 } from 'firebase/auth';
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL
+} from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { ProductItem, ShopSettings } from '../types';
 import { compressDataUrlIfNeeded, compressBannerDataUrl } from '../utils/imageCompressor';
@@ -28,6 +34,7 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+export const storage = getStorage(app);
 
 export enum OperationType {
   CREATE = 'create',
@@ -312,4 +319,44 @@ export async function logoutUser(): Promise<void> {
 
 export function onAuthChanged(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
+}
+
+/**
+ * Uploads a showroom tour video file to Firebase Cloud Storage (tickmark-346bb.firebasestorage.app)
+ * and returns the public download URL to be stored in Firestore settings so all devices can stream it.
+ */
+export function uploadVideoToCloudStorage(
+  file: File,
+  onProgress?: (progressPercent: number) => void
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fileExt = file.name.split('.').pop() || 'mp4';
+    const filePath = `showroom/video-${Date.now()}.${fileExt}`;
+    const fileRef = storageRef(storage, filePath);
+    const uploadTask = uploadBytesResumable(fileRef, file, {
+      contentType: file.type || 'video/mp4',
+    });
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        if (snapshot.totalBytes > 0) {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          if (onProgress) onProgress(Math.round(progress));
+        }
+      },
+      (error) => {
+        console.error('Firebase Storage upload error:', error);
+        reject(error);
+      },
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadUrl);
+        } catch (e) {
+          reject(e);
+        }
+      }
+    );
+  });
 }
