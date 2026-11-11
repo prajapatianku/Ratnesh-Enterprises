@@ -3,22 +3,11 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
-  Ruler,
-  PhoneCall,
-  Sparkles,
-  Award,
-  Video,
-  Layers,
-  Bath,
-  Droplets,
-  Home,
-  CheckCircle2,
-  MapPin,
-  Flame,
-  Grid3X3
+  Calculator,
+  Grid3X3,
+  Sparkles
 } from 'lucide-react';
-import { ProductItem, ShopSettings, ProductCategory, HeroSlide } from '../../types';
-import { BrandLogo } from '../brands/BrandLogos';
+import { ShopSettings, ProductCategory, HeroSlide } from '../../types';
 
 interface HeroSliderProps {
   onOpenCalculator: () => void;
@@ -30,63 +19,51 @@ interface HeroSliderProps {
 const DEFAULT_SLIDES: HeroSlide[] = [
   {
     id: 'vitrified-slabs',
-    badge: 'NEW LUXURY ARRIVALS · 2026 COLLECTION',
-    title: 'Grand Vitrified Slabs & Italian Marble Finishes',
-    subtitle: '600x1200 mm (2x4 ft) & Large Format Porcelain Tiles',
-    description:
-      'Engineered with mirror-like High Gloss and Carving Vein technology. Stain-proof, anti-skid and zero water absorption for living rooms, master bedrooms & commercial halls.',
-    ctaText: 'Explore Vitrified Tiles',
+    badge: 'LUXURY SURFACES',
+    title: 'Grand Vitrified Slabs & Designer Flooring',
+    subtitle: 'High Gloss, Matte & Carving Vein finishes in 600x1200 mm & large formats.',
+    description: '',
+    ctaText: 'Explore Tiles',
     ctaTarget: '#catalog',
-    secondaryCtaText: 'Tile Box Calculator',
+    secondaryCtaText: 'Tile Calculator',
     secondaryCtaTarget: 'calculator',
-    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80',
-    brandTags: ['Orientbell', 'Hels', 'Addon', 'Exotiles'],
-    gradientTheme: 'amber',
+    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=85',
   },
   {
     id: 'microvit-sanitary',
-    badge: 'EXCLUSIVE SANITARY BOUTIQUE',
-    title: 'Microvit Designer Table Top Basins & Closets',
-    subtitle: 'Matte Finish, Marble Pattern & Gold Rim Ceramic Art',
-    description:
-      'Transform ordinary bathrooms into 5-star hotel suites with Microvit luxury ceramic basins, rimless soft-close commodes, and premium designer vanities.',
-    ctaText: 'Browse Sanitaryware',
+    badge: 'EXCLUSIVE SANITARYWARE',
+    title: 'Designer Table-Top Basins & Ceramic Suites',
+    subtitle: 'Vitreous china basins, rimless commodes, and luxury bathroom aesthetics.',
+    description: '',
+    ctaText: 'View Sanitaryware',
     ctaTarget: '#catalog',
-    secondaryCtaText: 'Get WhatsApp Quotation',
+    secondaryCtaText: 'WhatsApp Inquiry',
     secondaryCtaTarget: 'whatsapp',
-    imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=80',
-    brandTags: ['Microvit', 'Addon'],
-    gradientTheme: 'emerald',
+    imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1920&q=85',
   },
   {
     id: 'juliet-polo-fittings',
-    badge: 'PRECISION GERMAN-STYLE ENGINEERING',
-    title: 'Juliet & Polo Luxury Faucets & Rain Showers',
-    subtitle: 'Solid Brass Concealed Diverters, Spouts & Shower Panels',
-    description:
-      'Heavy forged brass construction with diamond-chrome, matte black, and PVD gold coatings. High water flow performance tested for lifelong leak-free operation.',
-    ctaText: 'View Bath Fittings',
+    badge: 'PRECISION FITTINGS',
+    title: 'Luxury CP Faucets, Diverters & Showers',
+    subtitle: 'Engineered brass fittings with flawless chrome, matte black & PVD finishes.',
+    description: '',
+    ctaText: 'Browse Fittings',
     ctaTarget: '#catalog',
-    secondaryCtaText: 'Contractor Wholesale Rates',
-    secondaryCtaTarget: 'whatsapp',
-    imageUrl: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1600&q=80',
-    brandTags: ['Juliet', 'Polo'],
-    gradientTheme: 'slate',
+    secondaryCtaText: 'Calculate Boxes',
+    secondaryCtaTarget: 'calculator',
+    imageUrl: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=1920&q=85',
   },
   {
     id: 'showroom-experience',
-    badge: 'FLAGSHIP STOREFRONT · JAINAMORE, BOKARO',
-    title: 'Touch Real Slab Textures Under True Lighting',
-    subtitle: 'Over 1000+ Slabs, Tiles & Sanitary Mockups in Stock',
-    description:
-      'Visit our spacious physical showroom near Prajapati Dharamshala, Teacher Colony, Jainamore. Direct authorized brand pricing with safe hydraulic site delivery across Jharkhand.',
-    ctaText: 'Watch Showroom Video Tour',
+    badge: 'VISIT OUR SHOWROOM',
+    title: 'Experience 1,000+ Slabs & Live Mockups in Person',
+    subtitle: 'Flagship boutique in Jainamore, Bokaro with authorized brand direct pricing.',
+    description: '',
+    ctaText: 'Watch Showroom Video',
     ctaTarget: '#video-tour',
-    secondaryCtaText: 'Get Google Maps Directions',
+    secondaryCtaText: 'Get Directions',
     secondaryCtaTarget: 'maps',
     imageUrl: '/assets/aistudio/20261010_152610_fbe3c357.jpg',
-    brandTags: ['Orientbell', 'Hels', 'Addon', 'Microvit', 'Juliet', 'Polo'],
-    gradientTheme: 'gold',
   },
 ];
 
@@ -94,7 +71,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   onOpenCalculator,
   shopSettings,
   onSelectCategory,
-  onSelectBrandFilter,
 }) => {
   const slides = shopSettings.heroSlides && shopSettings.heroSlides.length > 0
     ? shopSettings.heroSlides
@@ -104,12 +80,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
-  // Auto-slide every 5.5 seconds (Flipkart/Amazon style)
+  // Auto-advance sliding poster every 5 seconds
   useEffect(() => {
     if (isPaused) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5500);
+    }, 5000);
     return () => clearInterval(timer);
   }, [isPaused, slides.length]);
 
@@ -127,7 +103,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       onOpenCalculator();
     } else if (target === 'whatsapp') {
       const text = encodeURIComponent(
-        `Hello ${shopSettings.shopName}! I am interested in getting a quotation and design options for tiles and sanitaryware.`
+        `Hello ${shopSettings.shopName}! I would like to inquire about tiles and sanitaryware pricing.`
       );
       const num = shopSettings.whatsappNumber ? `/${shopSettings.whatsappNumber}` : '';
       window.open(`https://wa.me${num}?text=${text}`, '_blank');
@@ -143,17 +119,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     }
   };
 
-  const handleCategoryQuickFilter = (cat: ProductCategory | 'all', subQuery?: string) => {
-    if (onSelectCategory) {
-      onSelectCategory(cat);
-    }
-    const el = document.getElementById('catalog');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Touch swipe support for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -161,338 +126,167 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 50) {
-      handleNext();
-    } else if (diff < -50) {
-      handlePrev();
-    }
+    if (diff > 50) handleNext();
+    else if (diff < -50) handlePrev();
     touchStartX.current = null;
   };
 
-  const slide = slides[currentSlide];
-
   return (
-    <section className="relative w-full bg-white text-slate-900 border-b border-slate-200 overflow-hidden">
-      {/* TOP ANNOUNCEMENT BANNER */}
-      <div className="w-full bg-slate-900 text-white py-2 px-4 text-center text-xs font-medium tracking-wide flex items-center justify-center gap-2 border-b border-slate-800">
-        <span className="flex items-center gap-1.5 font-bold text-amber-400">
-          <Flame className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-          <span>FESTIVE & SHOWROOM OFFER:</span>
-        </span>
-        <span className="truncate max-w-xl text-slate-200">
-          {shopSettings.announcementText ||
-            'Direct Factory Batches for Orientbell, Hels, Addon, Microvit & Polo with Safe Site Delivery in Bokaro.'}
-        </span>
-        <button
-          onClick={() => handleActionClick('whatsapp')}
-          className="text-amber-400 hover:text-amber-300 font-bold underline ml-1 cursor-pointer shrink-0 text-[11px] uppercase tracking-wider"
-        >
-          Get Price List →
-        </button>
-      </div>
-
-      {/* FLIPKART / AMAZON STYLE SLIDING HERO BANNER */}
+    <section className="relative w-full bg-slate-900 text-white overflow-hidden">
+      {/* Cinematic Sliding Poster Container (Ganesh Ceramic Style) */}
       <div
-        className="relative w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-3 sm:py-6"
+        className="relative w-full h-[400px] sm:h-[500px] lg:h-[580px] overflow-hidden"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="relative w-full rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-slate-950 aspect-[16/10] sm:aspect-[21/9] lg:aspect-[24/9] min-h-[420px] sm:min-h-[460px]">
-          {/* Slides Container */}
-          {slides.map((s, index) => {
-            const isActive = index === currentSlide;
-            return (
-              <div
-                key={s.id}
-                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                  isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-                }`}
-              >
-                {/* Background Image with Fallback and Scrim */}
-                <img
-                  src={s.imageUrl}
-                  alt={s.title}
-                  className="w-full h-full object-cover object-center scale-105 transition-transform duration-7000 ease-out"
-                  referrerPolicy="no-referrer"
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                />
+        {slides.map((slide, index) => {
+          const isActive = index === currentSlide;
+          return (
+            <div
+              key={slide.id || index}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+              }`}
+            >
+              {/* Background Poster Image */}
+              <img
+                src={slide.imageUrl}
+                alt={slide.title}
+                className="w-full h-full object-cover object-center"
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
 
-                {/* Dark Luxury Gradient Scrim for 100% Text Contrast */}
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-slate-950/30" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20" />
+              {/* Gradient Dark Scrim for High-Contrast Luxury Typography */}
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
 
-                {/* Slide Text Content */}
-                <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-12 lg:px-16 max-w-3xl">
-                  {/* Badge */}
-                  <div className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-amber-300 bg-amber-500/20 border border-amber-400/40 px-3 py-1 rounded-full mb-3 w-fit backdrop-blur-xs">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{s.badge}</span>
-                  </div>
-
-                  {/* Headline */}
-                  <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.15] drop-shadow-sm text-balance">
-                    {s.title}
-                  </h1>
-
-                  {/* Subtitle */}
-                  <p className="mt-2 text-sm sm:text-lg font-bold text-amber-200 drop-shadow-xs">
-                    {s.subtitle}
-                  </p>
-
-                  {/* Description */}
-                  <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl line-clamp-2 sm:line-clamp-3">
-                    {s.description}
-                  </p>
-
-                  {/* Brand Badges on Slide */}
-                  {s.brandTags && s.brandTags.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 mt-4">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        Authorized:
-                      </span>
-                      {s.brandTags.map((b) => (
-                        <span
-                          key={b}
-                          className="px-2 py-0.5 rounded text-[11px] font-semibold bg-white/15 text-white backdrop-blur-xs border border-white/20"
-                        >
-                          {b}
-                        </span>
-                      ))}
-                    </div>
+              {/* Poster Typography & Actions */}
+              <div className="absolute inset-0 max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 flex flex-col justify-center">
+                <div className="max-w-2xl">
+                  {slide.badge && (
+                    <span className="inline-block text-[11px] sm:text-xs font-bold tracking-widest text-amber-400 uppercase mb-3 px-3 py-1 bg-amber-500/20 border border-amber-400/30 rounded-full backdrop-blur-xs">
+                      {slide.badge}
+                    </span>
                   )}
 
-                  {/* CTA Buttons */}
-                  <div className="flex flex-wrap items-center gap-3 mt-6">
+                  <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                    {slide.title}
+                  </h1>
+
+                  <p className="mt-3 text-sm sm:text-base text-slate-200 font-medium leading-relaxed max-w-xl">
+                    {slide.subtitle}
+                  </p>
+
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
                     <button
-                      onClick={(e) => handleActionClick(s.ctaTarget, e)}
-                      className="px-5 sm:px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs sm:text-sm flex items-center gap-2 transition-all shadow-lg shadow-amber-500/25 hover:scale-[1.02] cursor-pointer"
+                      onClick={(e) => handleActionClick(slide.ctaTarget, e)}
+                      className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 transition-all shadow-md cursor-pointer"
                     >
-                      <span>{s.ctaText}</span>
+                      <span>{slide.ctaText || 'Explore Catalog'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
 
-                    {s.secondaryCtaText && s.secondaryCtaTarget && (
+                    {slide.secondaryCtaText && (
                       <button
-                        onClick={(e) => handleActionClick(s.secondaryCtaTarget!, e)}
-                        className="px-4 sm:px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 transition-colors border border-white/30 backdrop-blur-xs cursor-pointer"
+                        onClick={(e) => handleActionClick(slide.secondaryCtaTarget || '#catalog', e)}
+                        className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl text-xs sm:text-sm border border-white/25 backdrop-blur-xs transition-all cursor-pointer"
                       >
-                        {s.secondaryCtaTarget === 'calculator' && <Ruler className="w-4 h-4 text-amber-300" />}
-                        {s.secondaryCtaTarget === 'whatsapp' && <PhoneCall className="w-4 h-4 text-emerald-400" />}
-                        {s.secondaryCtaTarget === 'maps' && <MapPin className="w-4 h-4 text-amber-300" />}
-                        {s.secondaryCtaTarget === '#video-tour' && <Video className="w-4 h-4 text-amber-300" />}
-                        <span>{s.secondaryCtaText}</span>
+                        {slide.secondaryCtaText}
                       </button>
                     )}
                   </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
 
-          {/* Previous / Next Arrow Controls (Flipkart/Amazon style) */}
-          <button
-            onClick={handlePrev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-amber-500 text-white hover:text-slate-950 flex items-center justify-center backdrop-blur-sm transition-all duration-200 cursor-pointer shadow-lg hover:scale-105"
-            title="Previous Banner"
-            aria-label="Previous Banner"
-          >
-            <ChevronLeft className="w-6 h-6 sm:w-7 sm:h-7" />
-          </button>
+        {/* Previous & Next Navigation Arrows */}
+        <button
+          onClick={handlePrev}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+          title="Previous slide"
+        >
+          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
 
-          <button
-            onClick={handleNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-amber-500 text-white hover:text-slate-950 flex items-center justify-center backdrop-blur-sm transition-all duration-200 cursor-pointer shadow-lg hover:scale-105"
-            title="Next Banner"
-            aria-label="Next Banner"
-          >
-            <ChevronRight className="w-6 h-6 sm:w-7 sm:h-7" />
-          </button>
+        <button
+          onClick={handleNext}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs"
+          title="Next slide"
+        >
+          <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
 
-          {/* Slide Indicator Dots (Amazon/Flipkart pill style) */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-black/50 backdrop-blur-xs px-3 py-1.5 rounded-full border border-white/20">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                className={`transition-all duration-300 rounded-full cursor-pointer ${
-                  currentSlide === idx
-                    ? 'w-7 h-2.5 bg-amber-400'
-                    : 'w-2.5 h-2.5 bg-white/50 hover:bg-white'
-                }`}
-                title={`Go to slide ${idx + 1}`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
+        {/* Slide Indicators (Dots) */}
+        <div className="absolute bottom-6 inset-x-0 z-20 flex items-center justify-center gap-2">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentSlide(idx)}
+              className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                idx === currentSlide
+                  ? 'w-8 bg-amber-400'
+                  : 'w-2 bg-white/40 hover:bg-white/70'
+              }`}
+              title={`Slide ${idx + 1}`}
+            />
+          ))}
         </div>
       </div>
 
-      {/* FLIPKART & GANESH CERAMIC STYLE CATEGORY QUICK STRIP */}
-      <div className="w-full bg-slate-50 border-t border-slate-200 py-4 px-3 sm:px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-2 mb-3 px-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Grid3X3 className="w-3.5 h-3.5 text-amber-700" />
-              <span>Shop By Category</span>
-            </span>
-            <a
-              href="#catalog"
-              className="text-xs font-bold text-amber-700 hover:text-amber-800 hover:underline"
-            >
-              View All Products (17+) →
-            </a>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3">
-            {/* 1. Floor Tiles */}
+      {/* Quick Category Jump Strip (Minimal & Clean) */}
+      <div className="w-full bg-slate-950 border-t border-slate-800 py-3 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
+          <span className="text-xs text-slate-400 font-semibold shrink-0 uppercase tracking-wider">
+            Quick Categories:
+          </span>
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => handleCategoryQuickFilter('tiles', 'floor')}
-              className="group p-3 bg-white hover:bg-amber-50/60 rounded-xl border border-slate-200 hover:border-amber-400 transition-all text-left flex items-center gap-2.5 shadow-2xs hover:shadow-xs cursor-pointer"
+              onClick={() => {
+                if (onSelectCategory) onSelectCategory('all');
+                document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors"
             >
-              <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 group-hover:scale-105 transition-transform">
-                <Home className="w-4 h-4 text-amber-700" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-900 block truncate group-hover:text-amber-900">
-                  Floor Tiles
-                </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  Living & Bedroom
-                </span>
-              </div>
+              All Products
             </button>
-
-            {/* 2. Wall Tiles */}
             <button
-              onClick={() => handleCategoryQuickFilter('tiles', 'wall')}
-              className="group p-3 bg-white hover:bg-amber-50/60 rounded-xl border border-slate-200 hover:border-amber-400 transition-all text-left flex items-center gap-2.5 shadow-2xs hover:shadow-xs cursor-pointer"
+              onClick={() => {
+                if (onSelectCategory) onSelectCategory('tiles');
+                document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors"
             >
-              <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 group-hover:scale-105 transition-transform">
-                <Layers className="w-4 h-4 text-amber-700" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-900 block truncate group-hover:text-amber-900">
-                  Wall Slabs
-                </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  Kitchen & Accent
-                </span>
-              </div>
+              Vitrified & Wall Tiles
             </button>
-
-            {/* 3. Vitrified Porcelain 2x4 */}
             <button
-              onClick={() => handleCategoryQuickFilter('tiles', 'vitrified')}
-              className="group p-3 bg-white hover:bg-amber-50/60 rounded-xl border border-slate-200 hover:border-amber-400 transition-all text-left flex items-center gap-2.5 shadow-2xs hover:shadow-xs cursor-pointer"
+              onClick={() => {
+                if (onSelectCategory) onSelectCategory('sanitary');
+                document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors"
             >
-              <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 group-hover:scale-105 transition-transform">
-                <Sparkles className="w-4 h-4 text-amber-700" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-900 block truncate group-hover:text-amber-900">
-                  Vitrified Slabs
-                </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  600x1200 mm PGVT
-                </span>
-              </div>
+              Sanitaryware & Basins
             </button>
-
-            {/* 4. Table Top Basins */}
             <button
-              onClick={() => handleCategoryQuickFilter('sanitary', 'basin')}
-              className="group p-3 bg-white hover:bg-amber-50/60 rounded-xl border border-slate-200 hover:border-amber-400 transition-all text-left flex items-center gap-2.5 shadow-2xs hover:shadow-xs cursor-pointer"
+              onClick={() => {
+                if (onSelectCategory) onSelectCategory('fittings');
+                document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 transition-colors"
             >
-              <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 group-hover:scale-105 transition-transform">
-                <Droplets className="w-4 h-4 text-amber-700" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-900 block truncate group-hover:text-amber-900">
-                  Art Basins
-                </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  Microvit Table Top
-                </span>
-              </div>
+              Bath Fittings & Showers
             </button>
-
-            {/* 5. Sanitaryware */}
             <button
-              onClick={() => handleCategoryQuickFilter('sanitary', 'closet')}
-              className="group p-3 bg-white hover:bg-amber-50/60 rounded-xl border border-slate-200 hover:border-amber-400 transition-all text-left flex items-center gap-2.5 shadow-2xs hover:shadow-xs cursor-pointer"
+              onClick={onOpenCalculator}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-colors flex items-center gap-1.5"
             >
-              <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 group-hover:scale-105 transition-transform">
-                <Bath className="w-4 h-4 text-amber-700" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-900 block truncate group-hover:text-amber-900">
-                  Sanitaryware
-                </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  Commodes & Vanities
-                </span>
-              </div>
+              <Calculator className="w-3.5 h-3.5" />
+              <span>Tile Calculator</span>
             </button>
-
-            {/* 6. Bath Fittings */}
-            <button
-              onClick={() => handleCategoryQuickFilter('fittings', 'diverter')}
-              className="group p-3 bg-white hover:bg-amber-50/60 rounded-xl border border-slate-200 hover:border-amber-400 transition-all text-left flex items-center gap-2.5 shadow-2xs hover:shadow-xs cursor-pointer"
-            >
-              <div className="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 group-hover:scale-105 transition-transform">
-                <Award className="w-4 h-4 text-amber-700" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-slate-900 block truncate group-hover:text-amber-900">
-                  Bath Fittings
-                </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  Juliet & Polo Brass
-                </span>
-              </div>
-            </button>
-
-            {/* 7. Showroom Video Tour */}
-            <a
-              href="#video-tour"
-              className="group p-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl border border-amber-500 transition-all text-left flex items-center gap-2.5 shadow-xs cursor-pointer"
-            >
-              <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
-                <Video className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-bold text-white block truncate">
-                  Video Tour
-                </span>
-                <span className="text-[10px] text-amber-100 block truncate">
-                  Watch Showroom Walk
-                </span>
-              </div>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* QUICK TRUST BAR */}
-      <div className="border-t border-slate-200 bg-white py-3 px-4 sm:px-6 text-xs text-slate-700">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-semibold text-slate-800">Direct Authorized Dealer</span>
-          </div>
-          <div className="flex items-center justify-center sm:justify-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-semibold text-slate-800">100% Genuine First Quality</span>
-          </div>
-          <div className="flex items-center justify-center sm:justify-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-semibold text-slate-800">Zero-Breakage Site Transit</span>
-          </div>
-          <div className="flex items-center justify-center sm:justify-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="font-semibold text-slate-800">Wholesale Project Margins</span>
           </div>
         </div>
       </div>

@@ -547,6 +547,7 @@ export default function App() {
         {/* Ganesh Ceramic Style Showroom Video Tour Section */}
         <ShowroomVideoSection
           shopSettings={shopSettings}
+          onUpdateSettings={handleUpdateSettings}
           onOpenAdminPortal={handleOpenAdminPortal}
           isAdminAuthenticated={isAdminAuthenticated}
         />
