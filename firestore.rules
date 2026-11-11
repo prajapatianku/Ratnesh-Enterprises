@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'ratneshankit123@gmail.com' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidProduct(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 128 &&
+             data.brand is string && data.brand.size() <= 64 &&
+             data.category is string && data.category in ['tiles', 'sanitary', 'fittings'] &&
+             data.size is string && data.size.size() <= 64 &&
+             data.finish is string && data.finish.size() <= 64;
+    }
+
+    function isValidSettings(data) {
+      return data.shopName is string && data.shopName.size() <= 128 &&
+             data.whatsappNumber is string && data.whatsappNumber.size() <= 32 &&
+             data.phoneNumber is string && data.phoneNumber.size() <= 32 &&
+             data.address is string && data.address.size() <= 512;
+    }
+
+    // Products collection: Publicly readable for showroom browsing, schema-validated writes
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isValidId(productId) && isValidProduct(incoming());
+      allow update: if isValidId(productId) && isValidProduct(incoming());
+      allow delete: if isValidId(productId);
+    }
+
+    // Settings collection: Publicly readable for showroom contact info, schema-validated writes
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update: if isValidId(settingId) && isValidSettings(incoming());
+      allow delete: if isValidId(settingId);
+    }
+
+    // Admin designation list
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

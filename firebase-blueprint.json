@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Tiles, sanitaryware table top basins, and bath fittings catalog items",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "modelCode": { "type": "string", "maxLength": 64 },
+        "brand": { "type": "string", "maxLength": 64 },
+        "category": { "type": "string", "enum": ["tiles", "sanitary", "fittings"] },
+        "subCategory": { "type": "string", "maxLength": 128 },
+        "size": { "type": "string", "maxLength": 64 },
+        "finish": { "type": "string", "maxLength": 64 },
+        "pricePerUnit": { "type": "number" },
+        "mrp": { "type": "number" },
+        "unitLabel": { "type": "string", "maxLength": 32 },
+        "sqftPerBox": { "type": "number" },
+        "tilesPerBox": { "type": "number" },
+        "thickness": { "type": "string", "maxLength": 32 },
+        "colorTone": { "type": "string", "maxLength": 128 },
+        "texturePattern": { "type": "string", "maxLength": 64 },
+        "customImageUrl": { "type": "string", "maxLength": 2048 },
+        "features": { "type": "array" },
+        "inStock": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "isNew": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "brand", "category", "size", "finish"]
+    },
+    "ShopSettings": {
+      "title": "ShopSettings",
+      "description": "Showroom contact details, address, announcement text, and owner settings",
+      "type": "object",
+      "properties": {
+        "shopName": { "type": "string", "maxLength": 128 },
+        "tagline": { "type": "string", "maxLength": 256 },
+        "founderName": { "type": "string", "maxLength": 64 },
+        "managerName": { "type": "string", "maxLength": 64 },
+        "adminPin": { "type": "string", "maxLength": 16 },
+        "whatsappNumber": { "type": "string", "maxLength": 32 },
+        "phoneNumber": { "type": "string", "maxLength": 32 },
+        "secondaryPhone": { "type": "string", "maxLength": 32 },
+        "email": { "type": "string", "maxLength": 128 },
+        "address": { "type": "string", "maxLength": 512 },
+        "announcementText": { "type": "string", "maxLength": 512 },
+        "discountOfferText": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["shopName", "whatsappNumber", "phoneNumber", "address"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Public catalog of showroom tiles, sanitaryware, and bath fittings"
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/ShopSettings" },
+      "description": "Store configuration, phone numbers, and showroom location details"
+    }
+  }
+}

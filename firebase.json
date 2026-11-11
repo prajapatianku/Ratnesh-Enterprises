@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "databaseId": "ai-studio-grandroyalcerami-d04e4144-0a33-488a-a090-049ecfefc517",
+    "rules": "firestore.rules",
+    "edition": "ENTERPRISE",
+    "dataAccessMode": "FIRESTORE_NATIVE"
+  }
+}
