@@ -49,6 +49,11 @@ const DEFAULT_SETTINGS: ShopSettings = {
   announcementText:
     'RATNESH ENTERPRISES: Premium Vitrified Tiles, Microvit Sanitaryware & Bath Fittings in Bokaro! Visit our Jena showroom or order online.',
   discountOfferText: 'Showroom Special Offer',
+  showroomVideo: {
+    videoUrl: '',
+    videoTitle: 'Ratnesh Enterprises Showroom Tour',
+    videoSubtitle: 'Flagship Tiles & Sanitaryware Experience in Bokaro',
+  },
 };
 
 export default function App() {
@@ -279,16 +284,25 @@ export default function App() {
     const unsubscribeSettings = subscribeToSettings(
       (cloudSettings) => {
         if (cloudSettings && cloudSettings.shopName) {
-          setShopSettings((prev) => ({
-            ...prev,
-            ...cloudSettings,
-            showroomVideo: {
-              ...(prev.showroomVideo || {}),
-              ...(cloudSettings.showroomVideo || {}),
-              // Retain locally attached video file URL if cloud document does not supply one
-              videoUrl: cloudSettings.showroomVideo?.videoUrl || prev.showroomVideo?.videoUrl,
-            },
-          }));
+          setShopSettings((prev) => {
+            const hasLocalActiveVideo =
+              prev.showroomVideo?.videoUrl?.startsWith('blob:') ||
+              prev.showroomVideo?.videoUrl === 'local_indexeddb';
+
+            const effectiveVideoUrl = hasLocalActiveVideo
+              ? prev.showroomVideo?.videoUrl
+              : (cloudSettings.showroomVideo?.videoUrl || prev.showroomVideo?.videoUrl);
+
+            return {
+              ...prev,
+              ...cloudSettings,
+              showroomVideo: {
+                ...(prev.showroomVideo || {}),
+                ...(cloudSettings.showroomVideo || {}),
+                videoUrl: effectiveVideoUrl,
+              },
+            };
+          });
         }
       },
       (err) => {
@@ -313,21 +327,33 @@ export default function App() {
     };
   }, []);
 
-  // Restore local showroom video from IndexedDB if needed
+  // Restore showroom video from IndexedDB on startup (persists video files and URLs across reloads)
   useEffect(() => {
     let isMounted = true;
-    if (shopSettings.showroomVideo?.videoUrl === 'local_indexeddb') {
-      getLocalVideoBlob('showroom_video').then((blobUrl) => {
-        if (isMounted && blobUrl) {
-          setShopSettings((prev) => ({
-            ...prev,
-            showroomVideo: prev.showroomVideo
-              ? { ...prev.showroomVideo, videoUrl: blobUrl }
-              : undefined,
-          }));
-        }
-      });
-    }
+    getLocalVideoBlob('showroom_video').then((storedVideo) => {
+      if (isMounted && storedVideo) {
+        let metaTitle = 'Ratnesh Enterprises Showroom Tour';
+        let metaSubtitle = 'Flagship Tiles & Sanitaryware Experience in Bokaro';
+        try {
+          const rawMeta = localStorage.getItem('ratnesh_showroom_video_meta');
+          if (rawMeta) {
+            const parsed = JSON.parse(rawMeta);
+            if (parsed.title) metaTitle = parsed.title;
+            if (parsed.subtitle) metaSubtitle = parsed.subtitle;
+          }
+        } catch {}
+
+        setShopSettings((prev) => ({
+          ...prev,
+          showroomVideo: {
+            videoTitle: metaTitle,
+            videoSubtitle: metaSubtitle,
+            ...(prev.showroomVideo || {}),
+            videoUrl: storedVideo,
+          },
+        }));
+      }
+    });
     return () => {
       isMounted = false;
     };

@@ -278,6 +278,9 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
+    if (settingsForm.showroomVideo?.videoUrl) {
+      saveLocalVideoBlob('showroom_video', settingsForm.showroomVideo.videoUrl).catch(console.warn);
+    }
     onUpdateSettings(settingsForm);
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2000);

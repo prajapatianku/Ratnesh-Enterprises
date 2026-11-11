@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -13,10 +13,11 @@ import {
   Film,
   MapPin,
   Phone,
-  Link as LinkIcon
+  Link as LinkIcon,
+  RotateCcw
 } from 'lucide-react';
 import { ShopSettings, VideoShowcaseSettings } from '../../types';
-import { saveLocalVideoBlob } from '../../utils/videoStorage';
+import { saveLocalVideoBlob, getLocalVideoBlob, deleteLocalVideoBlob } from '../../utils/videoStorage';
 
 interface ShowroomVideoSectionProps {
   shopSettings: ShopSettings;
@@ -25,13 +26,14 @@ interface ShowroomVideoSectionProps {
   isAdminAuthenticated?: boolean;
 }
 
-// Helper to convert YouTube link into clean embed link
+// Fallback high-quality luxury ceramic showroom tour
+const DEFAULT_YOUTUBE_EMBED = 'https://www.youtube.com/embed/kYjygXAHyBU?rel=0&modestbranding=1&controls=1';
+
 function getEmbedUrl(url?: string): { isYouTube: boolean; embedUrl: string } {
-  if (!url) {
-    // High-quality luxury ceramic showroom tour default
+  if (!url || url === 'local_indexeddb') {
     return {
       isYouTube: true,
-      embedUrl: 'https://www.youtube.com/embed/kYjygXAHyBU?rel=0&modestbranding=1&controls=1',
+      embedUrl: DEFAULT_YOUTUBE_EMBED,
     };
   }
 
@@ -43,7 +45,7 @@ function getEmbedUrl(url?: string): { isYouTube: boolean; embedUrl: string } {
     };
   }
 
-  // Direct MP4 / WebM / Blob video
+  // Direct MP4 / WebM / live Blob video
   return {
     isYouTube: false,
     embedUrl: url,
@@ -53,11 +55,17 @@ function getEmbedUrl(url?: string): { isYouTube: boolean; embedUrl: string } {
 export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
   shopSettings,
   onUpdateSettings,
-  onOpenAdminPortal,
 }) => {
   const videoConfig: VideoShowcaseSettings = shopSettings.showroomVideo || {};
-  const currentVideoUrl = videoConfig.videoUrl;
-  const { isYouTube, embedUrl } = getEmbedUrl(currentVideoUrl);
+
+  // Active video URL resolved for playback (handles blobs recreated after page reload)
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string>(() => {
+    return videoConfig.videoUrl && videoConfig.videoUrl !== 'local_indexeddb'
+      ? videoConfig.videoUrl
+      : '';
+  });
+
+  const { isYouTube, embedUrl } = getEmbedUrl(activeVideoUrl);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -66,9 +74,13 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
   // Video Upload Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadTab, setUploadTab] = useState<'device' | 'url'>('device');
-  const [tempVideoUrl, setTempVideoUrl] = useState(currentVideoUrl || '');
-  const [tempVideoTitle, setTempVideoTitle] = useState(videoConfig.videoTitle || 'Ratnesh Enterprises Showroom Tour');
-  const [tempVideoSubtitle, setTempVideoSubtitle] = useState(videoConfig.videoSubtitle || 'Flagship Tiles & Sanitaryware Experience in Bokaro');
+  const [tempVideoUrl, setTempVideoUrl] = useState('');
+  const [tempVideoTitle, setTempVideoTitle] = useState(
+    videoConfig.videoTitle || 'Ratnesh Enterprises Showroom Tour'
+  );
+  const [tempVideoSubtitle, setTempVideoSubtitle] = useState(
+    videoConfig.videoSubtitle || 'Flagship Tiles & Sanitaryware Experience in Bokaro'
+  );
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -76,6 +88,35 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
   const title = videoConfig.videoTitle || 'Experience Our Showroom in Motion';
   const subtitle =
     videoConfig.videoSubtitle || 'Take a Virtual Walkthrough of Our Tiles & Bath Boutique in Bokaro';
+
+  // Restore and re-hydrate stored video from IndexedDB on initial mount and when settings change
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPersistedVideo() {
+      try {
+        const stored = await getLocalVideoBlob('showroom_video');
+        if (stored && isMounted) {
+          setActiveVideoUrl(stored);
+          return;
+        }
+
+        // If not in IndexedDB, use the configured videoUrl from settings if valid
+        const cfgUrl = videoConfig.videoUrl;
+        if (cfgUrl && cfgUrl !== 'local_indexeddb' && isMounted) {
+          setActiveVideoUrl(cfgUrl);
+        }
+      } catch (err) {
+        console.warn('Could not restore video from local storage:', err);
+      }
+    }
+
+    loadPersistedVideo();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [videoConfig.videoUrl]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -104,7 +145,7 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
 
   const handleWhatsAppVideoCallRequest = () => {
     const text = encodeURIComponent(
-      `Hello ${shopSettings.shopName}! I saw your showroom video on the website. Can you show me live video samples or options of vitrified tiles and sanitaryware?`
+      `Hello ${shopSettings.shopName}! I saw your showroom video on the website. Can you show me live video samples of tiles and sanitaryware?`
     );
     const num = shopSettings.whatsappNumber ? `/${shopSettings.whatsappNumber}` : '';
     window.open(`https://wa.me${num}?text=${text}`, '_blank');
@@ -114,13 +155,14 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 200 * 1024 * 1024) {
-        alert('Video file is larger than 200MB. Please select a smaller video or paste a YouTube link.');
+      if (file.size > 250 * 1024 * 1024) {
+        alert('Video file is larger than 250MB. Please choose a smaller video or paste a YouTube link.');
         return;
       }
       setSelectedFileName(file.name);
-      // Store safely in IndexedDB (handles large video files without 5MB localStorage limits)
+      // Immediately persist to IndexedDB
       await saveLocalVideoBlob('showroom_video', file);
+      // Create session-valid blob URL for instant preview
       const blobUrl = URL.createObjectURL(file);
       setTempVideoUrl(blobUrl);
     }
@@ -130,11 +172,38 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
     e.preventDefault();
     setIsSaving(true);
 
+    let finalVideoUrl = tempVideoUrl;
+
+    if (uploadTab === 'url') {
+      if (tempVideoUrl && tempVideoUrl.trim().length > 0) {
+        finalVideoUrl = tempVideoUrl.trim();
+        // Also persist URL to IndexedDB so it's always preserved locally
+        await saveLocalVideoBlob('showroom_video', finalVideoUrl);
+      }
+    }
+
+    // Immediately update active video URL for instant playback
+    if (finalVideoUrl) {
+      setActiveVideoUrl(finalVideoUrl);
+    }
+
+    // Persist video metadata locally as a permanent fallback
+    try {
+      localStorage.setItem(
+        'ratnesh_showroom_video_meta',
+        JSON.stringify({
+          title: tempVideoTitle,
+          subtitle: tempVideoSubtitle,
+          updatedAt: Date.now(),
+        })
+      );
+    } catch {}
+
     const updatedSettings: ShopSettings = {
       ...shopSettings,
       showroomVideo: {
         ...shopSettings.showroomVideo,
-        videoUrl: tempVideoUrl,
+        videoUrl: finalVideoUrl,
         videoTitle: tempVideoTitle,
         videoSubtitle: tempVideoSubtitle,
       },
@@ -149,11 +218,36 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
     setTimeout(() => {
       setSaveSuccess(false);
       setIsUploadModalOpen(false);
-    }, 1200);
+    }, 1000);
+  };
+
+  const handleResetToDefaultVideo = async () => {
+    if (confirm('Reset to the default showroom showcase video?')) {
+      await deleteLocalVideoBlob('showroom_video');
+      setActiveVideoUrl('');
+      try {
+        localStorage.removeItem('ratnesh_showroom_video_meta');
+      } catch {}
+
+      const updatedSettings: ShopSettings = {
+        ...shopSettings,
+        showroomVideo: {
+          ...shopSettings.showroomVideo,
+          videoUrl: '',
+          videoTitle: 'Ratnesh Enterprises Showroom Tour',
+          videoSubtitle: 'Flagship Tiles & Sanitaryware Experience in Bokaro',
+        },
+      };
+
+      if (onUpdateSettings) {
+        onUpdateSettings(updatedSettings);
+      }
+      setIsUploadModalOpen(false);
+    }
   };
 
   return (
-    <section id="video-tour" className="w-full py-12 sm:py-16 bg-slate-50 border-b border-slate-200 text-slate-900">
+    <section id="video-tour" className="w-full py-12 sm:py-16 bg-slate-50 border-b border-slate-200 text-slate-900 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header with Simple Title & Direct Upload Button */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
@@ -174,10 +268,10 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
           <div className="flex items-center gap-2.5 shrink-0">
             <button
               onClick={() => {
-                setTempVideoUrl(currentVideoUrl || '');
+                setTempVideoUrl(activeVideoUrl || '');
                 setIsUploadModalOpen(true);
               }}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer hover:scale-105 active:scale-95"
               title="Upload your own shop walkthrough video"
             >
               <Upload className="w-3.5 h-3.5 text-amber-400" />
@@ -186,7 +280,7 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
 
             <button
               onClick={handleWhatsAppVideoCallRequest}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer hover:scale-105 active:scale-95"
             >
               <Send className="w-3.5 h-3.5" />
               <span>WhatsApp Video Tour</span>
@@ -320,7 +414,7 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                     Upload Showroom Video
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Add your real showroom video so customers can take a virtual walkthrough.
+                    Save your showroom walkthrough video permanently on this device.
                   </p>
                 </div>
               </div>
@@ -345,7 +439,7 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Upload Video File
+                  Upload Video File (MP4/WebM)
                 </button>
                 <button
                   type="button"
@@ -365,23 +459,23 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                 <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-amber-500 transition-colors bg-slate-50">
                   <Upload className="w-8 h-8 text-amber-600 mx-auto mb-2" />
                   <p className="text-xs font-bold text-slate-900">
-                    Click to select a video file from your computer or phone
+                    Select a video from your computer or phone
                   </p>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Supports MP4, WebM, MOV (up to 200MB)
+                    Saved permanently in IndexedDB. Persists across browser reloads!
                   </p>
-                  <label className="mt-3 inline-block px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors">
+                  <label className="mt-3 inline-block px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-xs">
                     <span>Browse Video File</span>
                     <input
                       type="file"
-                      accept="video/mp4,video/webm,video/quicktime"
+                      accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
                       className="hidden"
                       onChange={handleFileChange}
                     />
                   </label>
                   {selectedFileName && (
                     <p className="mt-2 text-xs font-semibold text-emerald-700">
-                      ✓ Selected: {selectedFileName}
+                      ✓ Ready to save: {selectedFileName}
                     </p>
                   )}
                 </div>
@@ -404,7 +498,7 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                     />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    YouTube links sync across all devices instantly and load at high speed.
+                    YouTube links work across all devices and load at high speed.
                   </p>
                 </div>
               )}
@@ -412,7 +506,7 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
               {/* Video Title */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Video Title (Optional):
+                  Video Title:
                 </label>
                 <input
                   type="text"
@@ -422,30 +516,55 @@ export const ShowroomVideoSection: React.FC<ShowroomVideoSectionProps> = ({
                 />
               </div>
 
+              {/* Video Subtitle */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Video Subtitle:
+                </label>
+                <input
+                  type="text"
+                  value={tempVideoSubtitle}
+                  onChange={(e) => setTempVideoSubtitle(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-600 focus:bg-white"
+                />
+              </div>
+
               {/* Modal Actions */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer"
+                  onClick={handleResetToDefaultVideo}
+                  className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Remove uploaded video and revert to default"
                 >
-                  Cancel
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset to Default</span>
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
-                >
-                  {saveSuccess ? (
-                    <>
-                      <Check className="w-4 h-4 text-white" />
-                      <span>Saved!</span>
-                    </>
-                  ) : (
-                    <span>Save & Display Video</span>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                  >
+                    {saveSuccess ? (
+                      <>
+                        <Check className="w-4 h-4 text-white" />
+                        <span>Saved Successfully!</span>
+                      </>
+                    ) : (
+                      <span>Save &amp; Keep on Reload</span>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
