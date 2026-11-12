@@ -134,4 +134,5 @@ export interface ShopSettings {
   heroSlides?: HeroSlide[];
   heroBanners?: BannerSlide[];
   showroomVideo?: VideoShowcaseSettings;
+  catalogInitialized?: boolean;
 }

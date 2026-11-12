@@ -25,7 +25,6 @@ import {
   subscribeToSettings,
   saveSettingsToCloud,
   onAuthChanged,
-  batchSaveProductsToCloud,
 } from './lib/firebase';
 import { safeSetLocalStorage, sanitizeSettingsForStorage } from './utils/safeStorage';
 import { getLocalVideoBlob } from './utils/videoStorage';
@@ -144,8 +143,16 @@ export default function App() {
     }
   });
   const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState<boolean>(false);
-  const [isAdminMode, setIsAdminMode] = useState<boolean>(false);
+  const [isAdminMode, setIsAdminMode] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('ratnesh_admin_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isAdminPortalOpen, setIsAdminPortalOpen] = useState<boolean>(false);
+  const [productToEdit, setProductToEdit] = useState<ProductItem | null>(null);
+  const [adminInitialTab, setAdminInitialTab] = useState<'inventory' | 'add' | 'banners' | 'video' | 'settings'>('inventory');
 
   // Modals & Panels
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
@@ -202,11 +209,12 @@ export default function App() {
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
+    setTimeout(() => setToastMessage(null), 2800);
   };
 
   // Admin Security Handlers
-  const handleOpenAdminPortal = () => {
+  const handleOpenAdminPortal = (tab: 'inventory' | 'add' | 'banners' | 'video' | 'settings' = 'inventory') => {
+    setAdminInitialTab(tab);
     if (isAdminAuthenticated) {
       setIsAdminPortalOpen(true);
     } else {
@@ -229,6 +237,7 @@ export default function App() {
       console.error(e);
     }
     setIsAdminAuthenticated(true);
+    setIsAdminMode(true);
     setIsAdminPortalOpen(true);
     showToast('Owner access verified! Management portal unlocked.');
   };
@@ -242,42 +251,34 @@ export default function App() {
     setIsAdminAuthenticated(false);
     setIsAdminMode(false);
     setIsAdminPortalOpen(false);
+    setProductToEdit(null);
     showToast('Owner session locked.');
   };
 
-  // Cloud Database Sync (Firebase Firestore)
+  // Cloud Database Sync (Firebase Firestore - Single Source of Truth)
   useEffect(() => {
     testConnection();
 
-    // Subscribe to cloud products
+    // Subscribe directly to Firebase cloud products (never re-upload local cache on delete)
     const unsubscribeProducts = subscribeToProducts(
-      async (cloudProds) => {
+      (cloudProds) => {
         if (cloudProds && cloudProds.length > 0) {
-          // Check if there are local products stored on this phone/device that are not yet in the cloud
           try {
-            const savedLocalRaw = localStorage.getItem('grand_royal_products');
-            if (savedLocalRaw) {
-              const localList: ProductItem[] = JSON.parse(savedLocalRaw);
-              const cloudIdMap = new Map(cloudProds.map((p) => [p.id, p]));
-              const unSynced = localList.filter((lp) => !cloudIdMap.has(lp.id));
-
-              if (unSynced.length > 0) {
-                console.log(`[Auto-Sync] Found ${unSynced.length} local products not in cloud. Syncing to Firestore...`);
-                for (const item of unSynced) {
-                  await saveProductToCloud(item);
-                }
-                showToast(`Auto-synced ${unSynced.length} custom tiles from phone to cloud!`);
-                return;
-              }
-            }
-          } catch (syncErr) {
-            console.warn('Auto-sync check encountered:', syncErr);
-          }
-
+            localStorage.setItem('ratnesh_catalog_seeded', 'true');
+          } catch {}
           setProducts(cloudProds);
         } else {
-          // First run: seed default showroom collection
-          seedInitialProducts(INITIAL_PRODUCTS);
+          // Only seed initial products on a brand new empty database that has never been initialized
+          const alreadySeededLocal = localStorage.getItem('ratnesh_catalog_seeded') === 'true';
+          if (!alreadySeededLocal) {
+            seedInitialProducts(INITIAL_PRODUCTS).then(() => {
+              try {
+                localStorage.setItem('ratnesh_catalog_seeded', 'true');
+              } catch {}
+            });
+          } else {
+            setProducts([]);
+          }
         }
       },
       (err) => {
@@ -323,6 +324,7 @@ export default function App() {
     const unsubscribeAuth = onAuthChanged((user) => {
       if (user && user.email === 'ratneshankit123@gmail.com') {
         setIsAdminAuthenticated(true);
+        setIsAdminMode(true);
         try {
           sessionStorage.setItem('ratnesh_admin_auth', 'true');
         } catch {}
@@ -432,14 +434,15 @@ export default function App() {
   };
 
   const handleAddProduct = async (newProd: ProductItem) => {
-    setProducts((prev) => [newProd, ...prev]);
-    showToast(`Uploading "${newProd.name}" to cloud database...`);
+    setProducts((prev) => [newProd, ...prev.filter((p) => p.id !== newProd.id)]);
+    showToast(`Saving "${newProd.name}" to Firebase...`);
     try {
       await saveProductToCloud(newProd);
-      showToast(`✓ Published "${newProd.name}" to cloud database!`);
+      showToast(`✓ Added "${newProd.name}" to Firebase!`);
     } catch (err) {
-      console.error('Cloud save failed:', err);
-      showToast(`Saved locally. Cloud sync: ${err instanceof Error ? err.message : 'pending'}`);
+      console.error('Firebase save failed:', err);
+      showToast(`Failed to save to Firebase: ${err instanceof Error ? err.message : 'Check connection'}`);
+      throw err;
     }
   };
 
@@ -447,57 +450,31 @@ export default function App() {
     setProducts((prev) =>
       prev.map((p) => (p.id === updatedProd.id ? updatedProd : p))
     );
+    if (activeDetailProduct?.id === updatedProd.id) {
+      setActiveDetailProduct(updatedProd);
+    }
     try {
       await saveProductToCloud(updatedProd);
-      showToast(`✓ Updated "${updatedProd.name}" in cloud database!`);
+      showToast(`✓ Updated "${updatedProd.name}" in Firebase!`);
     } catch (err) {
-      console.error('Cloud update failed:', err);
-      showToast('Updated locally. Cloud sync pending.');
+      console.error('Firebase update failed:', err);
+      showToast(`Failed to update in Firebase: ${err instanceof Error ? err.message : 'Check connection'}`);
+      throw err;
     }
   };
 
-  const handleSyncLocalToCloud = async () => {
-    try {
-      showToast('Scanning and syncing local tiles to cloud...');
-      const savedLocalRaw = localStorage.getItem('grand_royal_products');
-      if (!savedLocalRaw) {
-        showToast('No local offline products found.');
-        return;
-      }
-      const localList: ProductItem[] = JSON.parse(savedLocalRaw);
-      let count = 0;
-      for (const item of localList) {
-        await saveProductToCloud(item);
-        count++;
-      }
-      showToast(`✓ Synced ${count} products to cloud database!`);
-    } catch (err) {
-      console.error('Sync failed:', err);
-      showToast(`Sync error: ${err instanceof Error ? err.message : 'failed'}`);
-    }
-  };
-
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
-    deleteProductFromCloud(id).catch(console.error);
-    showToast('Product removed from cloud database.');
-  };
-
-  const handleResetCatalog = () => {
-    setProducts(INITIAL_PRODUCTS);
-    seedInitialProducts(INITIAL_PRODUCTS).catch(console.error);
-    showToast('Catalog restored to default showroom products in cloud.');
-  };
-
-  const handleImportCatalog = async (imported: ProductItem[]) => {
-    setProducts(imported);
-    showToast(`Uploading ${imported.length} items to cloud database...`);
+    if (activeDetailProduct?.id === id) {
+      setIsDetailModalOpen(false);
+      setActiveDetailProduct(null);
+    }
     try {
-      await batchSaveProductsToCloud(imported);
-      showToast(`✓ Synced all ${imported.length} items to cloud database!`);
+      await deleteProductFromCloud(id);
+      showToast('✓ Deleted permanently from Firebase!');
     } catch (err) {
-      console.error('Import sync error:', err);
-      showToast(`Imported locally. Cloud error: ${err instanceof Error ? err.message : 'failed'}`);
+      console.error('Firebase delete failed:', err);
+      showToast(`Delete error in Firebase: ${err instanceof Error ? err.message : 'Check connection'}`);
     }
   };
 
@@ -505,10 +482,10 @@ export default function App() {
     setShopSettings(newSettings);
     try {
       await saveSettingsToCloud(newSettings);
-      showToast('Showroom settings updated & synced to cloud!');
+      showToast('Showroom settings saved to Firebase!');
     } catch (err) {
-      console.warn('Could not sync settings to cloud (saved locally):', err);
-      showToast('Showroom settings saved locally!');
+      console.warn('Could not save settings to Firebase:', err);
+      showToast('Settings saved locally (Firebase sync error).');
     }
   };
 
@@ -579,7 +556,7 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         onOpenCalculator={() => handleOpenCalculator()}
-        onOpenAdminPortal={handleOpenAdminPortal}
+        onOpenAdminPortal={() => handleOpenAdminPortal('inventory')}
         shopSettings={shopSettings}
         isAdminAuthenticated={isAdminAuthenticated}
         onLockAdmin={handleLockAdmin}
@@ -607,7 +584,7 @@ export default function App() {
         <ShowroomVideoSection
           shopSettings={shopSettings}
           onUpdateSettings={handleUpdateSettings}
-          onOpenAdminPortal={handleOpenAdminPortal}
+          onOpenAdminPortal={() => handleOpenAdminPortal('video')}
           isAdminAuthenticated={isAdminAuthenticated}
         />
 
@@ -616,12 +593,16 @@ export default function App() {
           products={products}
           onOpenDetails={handleOpenDetails}
           onAddToQuote={(prod) => handleAddToQuote(prod)}
-          onOpenAdminPortal={handleOpenAdminPortal}
+          onOpenAdminPortal={() => handleOpenAdminPortal('inventory')}
+          onOpenAddProduct={() => {
+            setProductToEdit(null);
+            handleOpenAdminPortal('add');
+          }}
           isAdminMode={isAdminMode}
           onToggleAdminMode={handleToggleAdminMode}
           onEditProduct={(p) => {
-            setActiveDetailProduct(p);
-            setIsAdminPortalOpen(true);
+            setProductToEdit(p);
+            handleOpenAdminPortal('inventory');
           }}
           onDeleteProduct={handleDeleteProduct}
           isAdminAuthenticated={isAdminAuthenticated}
@@ -673,6 +654,14 @@ export default function App() {
         }}
         onAddToQuote={(prod) => handleAddToQuote(prod)}
         shopSettings={shopSettings}
+        isAdminAuthenticated={isAdminAuthenticated}
+        onEditProduct={(p) => {
+          setIsDetailModalOpen(false);
+          setActiveDetailProduct(null);
+          setProductToEdit(p);
+          handleOpenAdminPortal('inventory');
+        }}
+        onDeleteProduct={handleDeleteProduct}
       />
 
       <AddProductModal
@@ -681,19 +670,24 @@ export default function App() {
         onProductAdd={handleAddProduct}
       />
 
-      <AdminPortalModal
-        isOpen={isAdminPortalOpen}
-        onClose={() => setIsAdminPortalOpen(false)}
-        products={products}
-        onAddProduct={handleAddProduct}
-        onUpdateProduct={handleUpdateProduct}
-        onDeleteProduct={handleDeleteProduct}
-        onResetCatalog={handleResetCatalog}
-        onImportCatalog={handleImportCatalog}
-        shopSettings={shopSettings}
-        onUpdateSettings={handleUpdateSettings}
-        onSyncLocalToCloud={handleSyncLocalToCloud}
-      />
+      {isAdminPortalOpen && (
+        <AdminPortalModal
+          isOpen={isAdminPortalOpen}
+          onClose={() => {
+            setIsAdminPortalOpen(false);
+            setProductToEdit(null);
+          }}
+          products={products}
+          onAddProduct={handleAddProduct}
+          onUpdateProduct={handleUpdateProduct}
+          onDeleteProduct={handleDeleteProduct}
+          shopSettings={shopSettings}
+          onUpdateSettings={handleUpdateSettings}
+          initialEditProduct={productToEdit}
+          onClearInitialEdit={() => setProductToEdit(null)}
+          initialTab={adminInitialTab}
+        />
+      )}
 
       {/* FLOATING ACTION: WhatsApp Direct Showroom Chat */}
       <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">

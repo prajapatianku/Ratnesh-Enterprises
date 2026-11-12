@@ -122,7 +122,7 @@ export function subscribeToProducts(
     (snap) => {
       const list: ProductItem[] = [];
       snap.forEach((d) => {
-        list.push(d.data() as ProductItem);
+        list.push({ ...(d.data() as ProductItem), id: d.id });
       });
       onSuccess(list);
     },
@@ -167,7 +167,7 @@ export async function saveProductToCloud(product: ProductItem): Promise<void> {
       cleanImages = await Promise.all(
         product.images.slice(0, 3).map(async (img) => {
           if (img && img.startsWith('data:image')) {
-            return await compressDataUrlIfNeeded(img);
+            return await compressDataUrlIfNeeded(img, 900, 0.65);
           }
           return img;
         })
@@ -176,12 +176,22 @@ export async function saveProductToCloud(product: ProductItem): Promise<void> {
 
     let cleanImageUrl = (cleanImages && cleanImages.length > 0) ? cleanImages[0] : product.customImageUrl;
     if (cleanImageUrl && cleanImageUrl.startsWith('data:image')) {
-      cleanImageUrl = await compressDataUrlIfNeeded(cleanImageUrl);
+      cleanImageUrl = await compressDataUrlIfNeeded(cleanImageUrl, 900, 0.65);
     }
+
+    // Enforce Firestore security rules field types and max lengths
+    const safeCategory = ['tiles', 'sanitary', 'fittings'].includes(product.category)
+      ? product.category
+      : 'tiles';
 
     const payload = sanitizeForFirestore({
       ...product,
       id: cleanId,
+      name: String(product.name || 'Untitled Design').trim().slice(0, 128) || 'Untitled Design',
+      brand: String(product.brand || 'Custom').trim().slice(0, 64) || 'Custom',
+      category: safeCategory,
+      size: String(product.size || 'Standard Size').trim().slice(0, 64) || 'Standard Size',
+      finish: String(product.finish || 'Polished').trim().slice(0, 64) || 'Polished',
       customImageUrl: cleanImageUrl || '',
       images: cleanImages && cleanImages.length > 0 ? cleanImages : (cleanImageUrl ? [cleanImageUrl] : []),
       updatedAt: new Date().toISOString(),
@@ -194,9 +204,16 @@ export async function saveProductToCloud(product: ProductItem): Promise<void> {
 }
 
 export async function deleteProductFromCloud(productId: string): Promise<void> {
-  const docPath = `products/${productId}`;
+  const rawId = (productId || '').trim();
+  const cleanId = rawId.replace(/[^a-zA-Z0-9_\-]/g, '-').slice(0, 100);
+  const docPath = `products/${rawId || cleanId}`;
   try {
-    await deleteDoc(doc(db, 'products', productId));
+    if (rawId && /^[a-zA-Z0-9_\-]+$/.test(rawId) && rawId.length <= 128) {
+      await deleteDoc(doc(db, 'products', rawId));
+    }
+    if (cleanId && cleanId !== rawId) {
+      await deleteDoc(doc(db, 'products', cleanId));
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docPath);
   }
@@ -205,17 +222,29 @@ export async function deleteProductFromCloud(productId: string): Promise<void> {
 export async function seedInitialProducts(products: ProductItem[]): Promise<void> {
   const colPath = 'products';
   try {
+    const settingsRef = doc(db, 'settings', 'shop');
+    const settingsSnap = await getDoc(settingsRef);
+    if (settingsSnap.exists() && settingsSnap.data()?.catalogInitialized === true) {
+      return;
+    }
+
     const snap = await getDocs(collection(db, colPath));
     if (snap.empty) {
       const batch = writeBatch(db);
       for (const p of products) {
-        batch.set(doc(db, 'products', p.id), sanitizeForFirestore({
+        const cleanId = p.id.replace(/[^a-zA-Z0-9_\-]/g, '-').slice(0, 100);
+        batch.set(doc(db, 'products', cleanId), sanitizeForFirestore({
           ...p,
+          id: cleanId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }));
       }
       await batch.commit();
+
+      if (settingsSnap.exists()) {
+        await setDoc(settingsRef, { catalogInitialized: true }, { merge: true });
+      }
     }
   } catch (error) {
     console.warn('Could not seed initial products directly to cloud:', error);
@@ -272,8 +301,14 @@ export async function saveSettingsToCloud(settings: ShopSettings): Promise<void>
       );
     }
 
+    // Enforce Firestore security rules lengths for settings
     const payload = sanitizeForFirestore({
       ...rawSettings,
+      shopName: String(rawSettings.shopName || 'Ratnesh Enterprises').slice(0, 128),
+      whatsappNumber: String(rawSettings.whatsappNumber || '918709489716').slice(0, 32),
+      phoneNumber: String(rawSettings.phoneNumber || '+91 87094 89716').slice(0, 32),
+      address: String(rawSettings.address || 'Bokaro Steel City, Jharkhand').slice(0, 512),
+      catalogInitialized: true,
       updatedAt: new Date().toISOString(),
     });
 

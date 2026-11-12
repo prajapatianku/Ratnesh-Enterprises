@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ProductItem } from '../../types';
 import { getTileTextureSvg } from '../../utils/textureGenerators';
 import { BrandLogo } from '../brands/BrandLogos';
@@ -21,6 +21,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onEditProduct,
   onDeleteProduct,
 }) => {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const primaryImage = product.images?.[0] || product.customImageUrl;
   const textureSrc = getTileTextureSvg(
     product.texturePattern,
@@ -41,6 +43,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       `Hello Ratnesh Enterprises! Please provide the quotation for:\n\n*${product.name}*${details}`
     );
     window.open(`https://wa.me/918709489716?text=${text}`, '_blank');
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (confirmDelete) {
+      setConfirmDelete(false);
+      onDeleteProduct?.(product.id);
+    } else {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3500);
+    }
   };
 
   return (
@@ -76,47 +90,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Out of Stock Banner */}
         {!product.inStock && (
-          <div className="absolute top-2.5 right-2.5 bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+          <div className="absolute bottom-2.5 right-2.5 z-10 bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-xs">
             Out of Stock
           </div>
         )}
 
-        {/* Admin Quick Action Pills (when in Admin Mode) */}
-        {isAdminMode && (
-          <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditProduct?.(product);
-              }}
-              className="p-1.5 bg-white/95 hover:bg-slate-100 text-amber-700 border border-slate-300 rounded shadow-xs"
-              title="Edit Tile"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm(`Delete ${product.name}?`)) {
-                  onDeleteProduct?.(product.id);
-                }
-              }}
-              className="p-1.5 bg-white/95 hover:bg-red-50 text-red-600 border border-slate-300 rounded shadow-xs"
-              title="Delete Tile"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
         {/* Quick action overlay on hover */}
-        <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+        <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2 pointer-events-none group-hover:pointer-events-auto">
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               onOpenDetails(product);
             }}
-            className="px-3.5 py-1.5 bg-white text-slate-900 hover:bg-amber-50 font-bold rounded-lg text-xs shadow-md transition-colors flex items-center gap-1.5"
+            className="px-3.5 py-1.5 bg-white text-slate-900 hover:bg-amber-50 font-bold rounded-lg text-xs shadow-md transition-colors flex items-center gap-1.5 cursor-pointer"
             title="Inspect Details"
           >
             <Eye className="w-3.5 h-3.5 text-amber-600" />
@@ -124,13 +111,45 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={handleWhatsApp}
-            className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs shadow-md transition-colors"
+            className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs shadow-md transition-colors cursor-pointer"
             title="WhatsApp inquiry"
           >
             <MessageSquare className="w-4 h-4 fill-white" />
           </button>
         </div>
+
+        {/* Admin Quick Action Pills (top right above overlay) */}
+        {isAdminMode && (
+          <div className="absolute top-2.5 right-2.5 z-30 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEditProduct?.(product);
+              }}
+              className="p-1.5 bg-white/95 hover:bg-amber-50 text-amber-700 border border-slate-300 rounded-lg shadow-sm cursor-pointer transition-colors"
+              title="Edit Tile Details"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className={`px-2 py-1.5 rounded-lg border shadow-sm cursor-pointer transition-all text-[10px] font-bold flex items-center gap-1 ${
+                confirmDelete
+                  ? 'bg-red-600 text-white border-red-700 animate-pulse'
+                  : 'bg-white/95 hover:bg-red-50 text-red-600 border-slate-300'
+              }`}
+              title={confirmDelete ? 'Tap again to confirm delete' : 'Delete Tile'}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {confirmDelete && <span>Confirm?</span>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Card Content & Metadata */}
@@ -159,9 +178,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </p>
         </div>
 
-        {/* Actions Row: Get Price on WhatsApp */}
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center">
+        {/* Actions Row: Get Price on WhatsApp + Owner Quick Bar */}
+        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2">
           <button
+            type="button"
             onClick={handleWhatsApp}
             className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all hover:scale-[1.01] cursor-pointer"
             title="Get Price"
@@ -169,6 +189,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <MessageSquare className="w-4 h-4 fill-white" />
             <span>Get Price on WhatsApp</span>
           </button>
+
+          {isAdminMode && (
+            <div className="grid grid-cols-2 gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEditProduct?.(product);
+                }}
+                className="py-1.5 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>Edit</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteClick}
+                className={`py-1.5 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors border ${
+                  confirmDelete
+                    ? 'bg-red-600 text-white border-red-700'
+                    : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                }`}
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>{confirmDelete ? 'Confirm?' : 'Delete'}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

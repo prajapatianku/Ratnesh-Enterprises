@@ -12,7 +12,6 @@ import {
   PlusCircle,
   Package,
   Settings,
-  Database,
   X,
   Upload,
   Image as ImageIcon,
@@ -20,7 +19,6 @@ import {
   Edit3,
   Check,
   Search,
-  Download,
   RotateCcw,
   Sparkles,
   PhoneCall,
@@ -38,18 +36,20 @@ import { compressImageFile, compressBannerDataUrl } from '../../utils/imageCompr
 import { saveLocalVideoBlob } from '../../utils/videoStorage';
 import { DEFAULT_BANNER_SLIDES } from '../hero/HeroSlider';
 
+type AdminTab = 'inventory' | 'add' | 'banners' | 'video' | 'settings';
+
 interface AdminPortalModalProps {
   isOpen: boolean;
   onClose: () => void;
   products: ProductItem[];
-  onAddProduct: (product: ProductItem) => void;
-  onUpdateProduct: (product: ProductItem) => void;
-  onDeleteProduct: (id: string) => void;
-  onResetCatalog: () => void;
-  onImportCatalog: (imported: ProductItem[]) => void;
+  onAddProduct: (product: ProductItem) => Promise<void> | void;
+  onUpdateProduct: (product: ProductItem) => Promise<void> | void;
+  onDeleteProduct: (id: string) => Promise<void> | void;
   shopSettings: ShopSettings;
-  onUpdateSettings: (settings: ShopSettings) => void;
-  onSyncLocalToCloud?: () => Promise<void>;
+  onUpdateSettings: (settings: ShopSettings) => Promise<void> | void;
+  initialEditProduct?: ProductItem | null;
+  onClearInitialEdit?: () => void;
+  initialTab?: AdminTab;
 }
 
 export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
@@ -59,17 +59,22 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
-  onResetCatalog,
-  onImportCatalog,
   shopSettings,
   onUpdateSettings,
-  onSyncLocalToCloud,
+  initialEditProduct = null,
+  onClearInitialEdit,
+  initialTab = 'inventory',
 }) => {
-  if (!isOpen) return null;
-
-  const [activeTab, setActiveTab] = useState<'add' | 'inventory' | 'banners' | 'video' | 'settings' | 'backup'>('inventory');
+  const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Hero Banners State
   const [bannerSlides, setBannerSlides] = useState<BannerSlide[]>(() => {
@@ -140,16 +145,22 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
   const [inventorySearch, setInventorySearch] = useState('');
 
   // Editing state
-  const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductItem | null>(initialEditProduct);
+
+  React.useEffect(() => {
+    if (initialEditProduct) {
+      setEditingProduct(initialEditProduct);
+    }
+  }, [initialEditProduct]);
 
   // Settings State
   const [settingsForm, setSettingsForm] = useState<ShopSettings>(shopSettings);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   // Handle Add Product Submit
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isAddingProduct) return;
 
     const finalBrand = brand === 'Other' && customBrandName.trim() ? customBrandName.trim() : brand;
 
@@ -194,21 +205,60 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
       },
     };
 
-    onAddProduct(newProduct);
-    // Reset form
-    setName('');
-    setModelCode('');
-    setCustomImageUrl('');
-    setUploadedImages(['', '', '']);
-    setActiveTab('inventory');
+    setIsAddingProduct(true);
+    try {
+      await onAddProduct(newProduct);
+      // Reset form
+      setName('');
+      setModelCode('');
+      setCustomImageUrl('');
+      setUploadedImages(['', '', '']);
+      setActiveTab('inventory');
+    } catch {
+      // toast already shown by parent
+    } finally {
+      setIsAddingProduct(false);
+    }
   };
 
   // Handle Edit Submit
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProduct) return;
-    onUpdateProduct(editingProduct);
-    setEditingProduct(null);
+    if (!editingProduct || isSavingEdit) return;
+    setIsSavingEdit(true);
+    try {
+      const cleanedProduct: ProductItem = {
+        ...editingProduct,
+        name: editingProduct.name.trim(),
+        brand: editingProduct.brand.trim(),
+        features: (editingProduct.features || []).map((f) => f.trim()).filter(Boolean),
+      };
+      await onUpdateProduct(cleanedProduct);
+      setEditingProduct(null);
+      onClearInitialEdit?.();
+    } catch {
+      // toast already shown by parent
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // Handle two-tap inline Delete inside Inventory
+  const handleConfirmDelete = async (id: string) => {
+    if (confirmDeleteId === id) {
+      setDeletingId(id);
+      setConfirmDeleteId(null);
+      try {
+        await onDeleteProduct(id);
+      } finally {
+        setDeletingId(null);
+      }
+    } else {
+      setConfirmDeleteId(id);
+      setTimeout(() => {
+        setConfirmDeleteId((curr) => (curr === id ? null : curr));
+      }, 4000);
+    }
   };
 
   // Multi-slot image upload handler for Add Design form
@@ -217,7 +267,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
     if (file) {
       setCompressingSlot(slotIndex);
       try {
-        const compressed = await compressImageFile(file, 1024, 0.75);
+        const compressed = await compressImageFile(file, 900, 0.7);
         setUploadedImages((prev) => {
           const updated = [...prev];
           updated[slotIndex] = compressed;
@@ -232,13 +282,13 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
     }
   };
 
-  // Image Upload handler with automatic compression (<150KB for phone camera photos)
+  // Image Upload handler with automatic compression (<100KB for phone camera photos)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isForEdit = false, slotIndex = 0) => {
     const file = e.target.files?.[0];
     if (file) {
       setIsCompressingImage(true);
       try {
-        const compressed = await compressImageFile(file, 1024, 0.75);
+        const compressed = await compressImageFile(file, 900, 0.7);
         if (isForEdit && editingProduct) {
           const currImages = editingProduct.images && editingProduct.images.length > 0
             ? [...editingProduct.images]
@@ -260,39 +310,6 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
       } finally {
         setIsCompressingImage(false);
       }
-    }
-  };
-
-  // Export JSON Backup
-  const handleExportBackup = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(products, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `royal_tiles_catalog_backup_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  // Import JSON Backup
-  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const parsed = JSON.parse(event.target?.result as string);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            onImportCatalog(parsed);
-            alert(`Successfully restored ${parsed.length} products from backup!`);
-          } else {
-            alert('Invalid backup file format.');
-          }
-        } catch (err) {
-          alert('Could not parse JSON file.');
-        }
-      };
-      reader.readAsText(file);
     }
   };
 
@@ -380,6 +397,8 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
     );
   });
 
+  if (!isOpen) return null;
+
   return (
     <div
       onClick={onClose}
@@ -390,27 +409,28 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
         className="relative w-full max-w-5xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[94vh]"
       >
         {/* Top Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50/80">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200 bg-slate-50/80">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
               <ShieldAlert className="w-4 h-4" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                Shopkeeper & Admin Control Center
-                <span className="text-[10px] bg-amber-600 text-white font-black px-2 py-0.5 rounded shadow-xs">
-                  OWNER MODE
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                <span>Showroom Control Hub</span>
+                <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded shadow-xs inline-flex items-center gap-1">
+                  <Cloud className="w-3 h-3" />
+                  Firebase Connected
                 </span>
               </h2>
-              <p className="text-xs text-slate-500">
-                Add your tile designs and bath fixtures one-by-one, manage stock & set WhatsApp details
+              <p className="text-[11px] sm:text-xs text-slate-500 truncate">
+                Add, edit, or delete products &amp; customize showroom settings — saved live to cloud
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
             title="Close Admin Portal"
           >
             <X className="w-5 h-5" />
@@ -418,8 +438,9 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 border-b border-slate-200 text-xs overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-slate-100 border-b border-slate-200 text-xs overflow-x-auto scrollbar-none">
           <button
+            type="button"
             onClick={() => setActiveTab('inventory')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'inventory'
@@ -428,10 +449,11 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
             }`}
           >
             <Package className="w-3.5 h-3.5" />
-            <span>Manage All Items ({products.length})</span>
+            <span>Manage Items ({products.length})</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('add')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'add'
@@ -444,6 +466,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('banners')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'banners'
@@ -456,6 +479,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('video')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'video'
@@ -468,6 +492,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('settings')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'settings'
@@ -476,31 +501,19 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
             }`}
           >
             <Settings className="w-3.5 h-3.5" />
-            <span>Store & WhatsApp Setup</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('backup')}
-            className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === 'backup'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-            }`}
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>Backup / Restore</span>
+            <span>Store &amp; WhatsApp Setup</span>
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-5 text-xs text-slate-800">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 text-xs text-slate-800">
           {/* =========================================================================
               TAB 1: INVENTORY & MANAGE ALL PRODUCTS
              ========================================================================= */}
           {activeTab === 'inventory' && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="relative w-full sm:w-72">
+                <div className="relative w-full sm:w-80">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
@@ -511,132 +524,209 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                   />
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  {onSyncLocalToCloud && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setIsSyncing(true);
-                        try {
-                          await onSyncLocalToCloud();
-                        } finally {
-                          setIsSyncing(false);
-                        }
-                      }}
-                      disabled={isSyncing}
-                      className="flex-1 sm:flex-initial px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg flex items-center justify-center gap-1.5 font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                      title="Upload and sync all tiles saved on this phone to the cloud database"
-                    >
-                      <Cloud className={`w-4 h-4 ${isSyncing ? 'animate-bounce text-amber-600' : 'text-amber-600'}`} />
-                      <span>{isSyncing ? 'Syncing to Cloud...' : 'Sync Phone to Cloud'}</span>
-                    </button>
-                  )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('add')}
+                  className="w-full sm:w-auto px-4 py-2 bg-amber-600 text-white font-bold rounded-lg flex items-center justify-center gap-1.5 hover:bg-amber-500 transition-colors shrink-0 cursor-pointer shadow-xs"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Add New Design</span>
+                </button>
+              </div>
+
+              {filteredInventory.length === 0 && (
+                <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-200">
+                  <Package className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="text-slate-600 font-semibold">No products found</p>
                   <button
+                    type="button"
                     onClick={() => setActiveTab('add')}
-                    className="flex-1 sm:flex-initial px-4 py-2 bg-amber-600 text-white font-bold rounded-lg flex items-center justify-center gap-1.5 hover:bg-amber-500 transition-colors shrink-0 cursor-pointer shadow-xs"
+                    className="mt-3 px-4 py-2 bg-amber-600 text-white rounded-lg font-bold text-xs cursor-pointer"
                   >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Add Next Tile</span>
+                    + Add First Design
                   </button>
                 </div>
+              )}
+
+              {/* Mobile Friendly Card List (< md) */}
+              <div className="grid grid-cols-1 gap-3 md:hidden">
+                {filteredInventory.map((item) => {
+                  const primaryImg = item.images?.[0] || item.customImageUrl;
+                  const img = getTileTextureSvg(item.texturePattern, primaryImg, item.finish);
+                  const isConfirming = confirmDeleteId === item.id;
+                  const isDeleting = deletingId === item.id;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex flex-col gap-2.5"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-14 h-14 rounded-lg border border-slate-200 bg-cover bg-center shrink-0"
+                          style={{ backgroundImage: `url("${img}")` }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-slate-900 text-xs truncate">{item.name}</div>
+                          <div className="text-[11px] text-amber-700 font-bold mt-0.5">
+                            {item.brand} · <span className="font-mono text-slate-500 font-normal">{item.modelCode}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500 capitalize mt-0.5 truncate">
+                            {item.category} · {item.size} · {item.finish}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => onUpdateProduct({ ...item, inStock: !item.inStock })}
+                          className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase cursor-pointer ${
+                            item.inStock
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                          }`}
+                        >
+                          {item.inStock ? 'In Stock' : 'Out of Stock'}
+                        </button>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingProduct(item)}
+                            className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isDeleting}
+                            onClick={() => handleConfirmDelete(item.id)}
+                            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 cursor-pointer border transition-colors disabled:opacity-50 ${
+                              isConfirming
+                                ? 'bg-red-600 text-white border-red-700'
+                                : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                            }`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>{isDeleting ? 'Deleting...' : isConfirming ? 'Confirm?' : 'Delete'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Products Table */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
-                        <th className="py-2.5 px-3">Item / Image</th>
-                        <th className="py-2.5 px-3">Brand & Code</th>
-                        <th className="py-2.5 px-3">Category & Size</th>
-                        <th className="py-2.5 px-3">Type / Sub-Category</th>
-                        <th className="py-2.5 px-3">Status</th>
-                        <th className="py-2.5 px-3 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredInventory.map((item) => {
-                        const img = getTileTextureSvg(item.texturePattern, item.customImageUrl, item.finish);
-                        return (
-                          <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                            {/* Image & Title */}
-                            <td className="py-2.5 px-3 flex items-center gap-2.5">
-                              <div
-                                className="w-10 h-10 rounded border border-slate-200 bg-cover bg-center shrink-0 shadow-xs"
-                                style={{ backgroundImage: `url("${img}")` }}
-                              />
-                              <div className="max-w-[200px]">
-                                <div className="font-semibold text-slate-900 truncate">{item.name}</div>
-                                <div className="text-[10px] text-slate-500">{item.finish}</div>
-                              </div>
-                            </td>
+              {/* Desktop Table (md+) */}
+              {filteredInventory.length > 0 && (
+                <div className="hidden md:block border border-slate-200 rounded-xl overflow-hidden bg-white shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50 text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
+                          <th className="py-2.5 px-3">Item / Image</th>
+                          <th className="py-2.5 px-3">Brand &amp; Code</th>
+                          <th className="py-2.5 px-3">Category &amp; Size</th>
+                          <th className="py-2.5 px-3">Type / Sub-Category</th>
+                          <th className="py-2.5 px-3">Status</th>
+                          <th className="py-2.5 px-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredInventory.map((item) => {
+                          const primaryImg = item.images?.[0] || item.customImageUrl;
+                          const img = getTileTextureSvg(item.texturePattern, primaryImg, item.finish);
+                          const isConfirming = confirmDeleteId === item.id;
+                          const isDeleting = deletingId === item.id;
 
-                            {/* Brand & Code */}
-                            <td className="py-2.5 px-3">
-                              <div className="font-bold text-amber-700">{item.brand}</div>
-                              <div className="text-[10px] text-slate-500 font-mono">{item.modelCode}</div>
-                            </td>
+                          return (
+                            <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                              {/* Image & Title */}
+                              <td className="py-2.5 px-3 flex items-center gap-2.5">
+                                <div
+                                  className="w-10 h-10 rounded border border-slate-200 bg-cover bg-center shrink-0 shadow-xs"
+                                  style={{ backgroundImage: `url("${img}")` }}
+                                />
+                                <div className="max-w-[200px]">
+                                  <div className="font-semibold text-slate-900 truncate">{item.name}</div>
+                                  <div className="text-[10px] text-slate-500">{item.finish}</div>
+                                </div>
+                              </td>
 
-                            {/* Category & Size */}
-                            <td className="py-2.5 px-3">
-                              <div className="capitalize text-slate-800 font-medium">{item.category}</div>
-                              <div className="text-[10px] text-slate-500">{item.size}</div>
-                            </td>
+                              {/* Brand & Code */}
+                              <td className="py-2.5 px-3">
+                                <div className="font-bold text-amber-700">{item.brand}</div>
+                                <div className="text-[10px] text-slate-500 font-mono">{item.modelCode}</div>
+                              </td>
 
-                            {/* Type / Sub-Category */}
-                            <td className="py-2.5 px-3">
-                              <span className="text-slate-700 font-medium capitalize">
-                                {item.subCategory || (item.category === 'tiles' ? 'Tile Slab' : item.category === 'sanitary' ? 'Sanitaryware' : 'Bath Fitting')}
-                              </span>
-                            </td>
+                              {/* Category & Size */}
+                              <td className="py-2.5 px-3">
+                                <div className="capitalize text-slate-800 font-medium">{item.category}</div>
+                                <div className="text-[10px] text-slate-500">{item.size}</div>
+                              </td>
 
-                            {/* In Stock toggle */}
-                            <td className="py-2.5 px-3">
-                              <button
-                                onClick={() =>
-                                  onUpdateProduct({ ...item, inStock: !item.inStock })
-                                }
-                                className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                                  item.inStock
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : 'bg-rose-50 text-rose-700 border border-rose-200'
-                                }`}
-                              >
-                                {item.inStock ? 'In Stock' : 'Out of Stock'}
-                              </button>
-                            </td>
+                              {/* Type / Sub-Category */}
+                              <td className="py-2.5 px-3">
+                                <span className="text-slate-700 font-medium capitalize">
+                                  {item.subCategory || (item.category === 'tiles' ? 'Tile Slab' : item.category === 'sanitary' ? 'Sanitaryware' : 'Bath Fitting')}
+                                </span>
+                              </td>
 
-                            {/* Actions */}
-                            <td className="py-2.5 px-3 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
+                              {/* In Stock toggle */}
+                              <td className="py-2.5 px-3">
                                 <button
-                                  onClick={() => setEditingProduct(item)}
-                                  className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors cursor-pointer"
-                                  title="Edit full specifications"
+                                  type="button"
+                                  onClick={() =>
+                                    onUpdateProduct({ ...item, inStock: !item.inStock })
+                                  }
+                                  className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                                    item.inStock
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                  }`}
                                 >
-                                  <Edit3 className="w-3.5 h-3.5" />
+                                  {item.inStock ? 'In Stock' : 'Out of Stock'}
                                 </button>
-                                <button
-                                  onClick={() => {
-                                    if (confirm(`Are you sure you want to delete ${item.name}?`)) {
-                                      onDeleteProduct(item.id);
-                                    }
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                                  title="Delete item"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="py-2.5 px-3 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingProduct(item)}
+                                    className="px-2.5 py-1 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Edit full specifications"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                    <span>Edit</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={isDeleting}
+                                    onClick={() => handleConfirmDelete(item.id)}
+                                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer border disabled:opacity-50 ${
+                                      isConfirming
+                                        ? 'bg-red-600 text-white border-red-700'
+                                        : 'text-rose-600 bg-rose-50 hover:bg-rose-100 border-rose-200'
+                                    }`}
+                                    title={isConfirming ? 'Click again to delete permanently' : 'Delete item'}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>{isDeleting ? 'Deleting...' : isConfirming ? 'Confirm?' : 'Delete'}</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -975,10 +1065,11 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-600/20 cursor-pointer"
+                disabled={isAddingProduct || compressingSlot !== null}
+                className="w-full py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-600/20 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>Save Design & Publish Live to Showroom</span>
+                <span>{isAddingProduct ? 'Saving to Firebase...' : 'Save Design & Publish Live to Showroom'}</span>
               </button>
             </form>
           )}
@@ -1602,107 +1693,45 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
               </div>
             </div>
           )}
-
-          {/* =========================================================================
-              TAB 4: BACKUP & DATA
-             ========================================================================= */}
-          {activeTab === 'backup' && (
-            <div className="max-w-2xl mx-auto flex flex-col gap-4">
-              {/* Highlighted Direct Netlify Dist Download Card */}
-              <div className="bg-gradient-to-r from-amber-50 via-white to-amber-50/40 border border-amber-300 rounded-xl p-4 flex flex-col gap-2 shadow-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-slate-900 text-sm">Download Production Build (dist.zip) for Netlify</span>
-                  <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold">READY TO DEPLOY</span>
-                </div>
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  Click the button below to download the latest compiled <span className="font-mono text-amber-700 font-bold">dist.zip</span> file. Unzip it on your computer to get the <span className="font-mono text-amber-700 font-bold">dist</span> folder, then drag and drop that folder onto Netlify Drop!
-                </p>
-                <a
-                  href="/dist.zip"
-                  download="dist.zip"
-                  className="mt-2 py-2.5 px-4 bg-amber-600 hover:bg-amber-500 text-white font-extrabold rounded-xl flex items-center gap-2 self-start transition-all shadow-md hover:scale-105 cursor-pointer text-xs"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download dist.zip for Netlify</span>
-                </a>
-              </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2 shadow-xs">
-                <span className="font-bold text-slate-900 text-sm">Download Backup of Your Designs</span>
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  Export all your tile designs, photos, and specifications into a single JSON file. You can save this on your computer or phone so your catalog data is 100% safe.
-                </p>
-                <button
-                  onClick={handleExportBackup}
-                  className="mt-2 py-2 px-4 bg-white hover:bg-slate-100 text-amber-700 border border-slate-300 rounded-xl font-bold flex items-center gap-2 self-start transition-colors cursor-pointer shadow-xs"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Catalog Backup (.json)</span>
-                </button>
-              </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2 shadow-xs">
-                <span className="font-bold text-slate-900 text-sm">Restore From Backup</span>
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  Upload a previously downloaded JSON catalog file to restore all your tiles and sanitary collections at once.
-                </p>
-                <label className="cursor-pointer mt-2 py-2 px-4 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl font-bold flex items-center gap-2 self-start transition-colors shadow-xs">
-                  <Upload className="w-4 h-4 text-amber-600" />
-                  <span>Choose Backup File (.json)</span>
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImportBackup}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              <div className="bg-rose-50/50 border border-rose-200 rounded-xl p-4 flex flex-col gap-2">
-                <span className="font-bold text-rose-700 text-sm">Reset to Default Factory Catalog</span>
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  Restore the initial collection of Orientbell, Hels, Addon, Exotiles, Microvit, Juliet, and Polo designs.
-                </p>
-                <button
-                  onClick={() => {
-                    if (confirm('Are you sure you want to restore the default initial catalog?')) {
-                      onResetCatalog();
-                      alert('Catalog restored to default authorized showroom brands!');
-                    }
-                  }}
-                  className="mt-2 py-2 px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-semibold flex items-center gap-2 self-start transition-colors cursor-pointer shadow-xs"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Reset Catalog</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* =========================================================================
-          SUB-MODAL: EDIT PRODUCT SPECIFICATIONS
+          SUB-MODAL: EDIT FULL PRODUCT SPECIFICATIONS & PHOTOS
          ========================================================================= */}
       {editingProduct && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl p-5 flex flex-col gap-4 text-xs text-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-amber-600" />
-                <span>Edit: {editingProduct.name}</span>
+        <div
+          onClick={() => {
+            setEditingProduct(null);
+            onClearInitialEdit?.();
+          }}
+          className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 sm:p-5 flex flex-col gap-3.5 text-xs text-slate-800 max-h-[90vh] overflow-y-auto my-auto"
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3 sticky top-0 bg-white z-10">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 truncate pr-2">
+                <Edit3 className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="truncate">Edit: {editingProduct.name}</span>
               </h3>
               <button
-                onClick={() => setEditingProduct(null)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setEditingProduct(null);
+                  onClearInitialEdit?.();
+                }}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleEditSubmit} className="flex flex-col gap-3">
+              {/* Product Name */}
               <div>
-                <label className="block text-slate-700 mb-1 font-medium">Title</label>
+                <label className="block text-slate-700 mb-1 font-semibold">Design / Product Title</label>
                 <input
                   type="text"
                   required
@@ -1710,116 +1739,232 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                   onChange={(e) =>
                     setEditingProduct({ ...editingProduct, name: e.target.value })
                   }
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
                 />
               </div>
 
-              {(() => {
-                const isEditingSanitaryOrFittings =
-                  ['Juliet', 'Microvit', 'Polo'].includes(editingProduct.brand) ||
-                  editingProduct.category === 'sanitary' ||
-                  editingProduct.category === 'fittings';
+              {/* Category & Brand */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Category</label>
+                  <select
+                    value={editingProduct.category}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        category: e.target.value as ProductCategory,
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
+                  >
+                    <option value="tiles">Tiles</option>
+                    <option value="sanitary">Sanitaryware</option>
+                    <option value="fittings">Bath Fittings &amp; Taps</option>
+                  </select>
+                </div>
 
-                return (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-700 mb-1 font-medium">Brand</label>
-                        <input
-                          type="text"
-                          value={editingProduct.brand}
-                          onChange={(e) =>
-                            setEditingProduct({ ...editingProduct, brand: e.target.value })
-                          }
-                          className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                        />
-                      </div>
-                      {isEditingSanitaryOrFittings ? (
-                        <div>
-                          <label className="block text-slate-700 mb-1 font-medium">Sub-Category / Type</label>
-                          <input
-                            type="text"
-                            value={editingProduct.subCategory || ''}
-                            onChange={(e) =>
-                              setEditingProduct({ ...editingProduct, subCategory: e.target.value })
-                            }
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <label className="block text-slate-700 mb-1 font-medium">Model Code</label>
-                          <input
-                            type="text"
-                            value={editingProduct.modelCode}
-                            onChange={(e) =>
-                              setEditingProduct({ ...editingProduct, modelCode: e.target.value })
-                            }
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 font-mono focus:outline-none focus:border-amber-500 focus:bg-white"
-                          />
-                        </div>
-                      )}
-                    </div>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Brand Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProduct.brand}
+                    onChange={(e) =>
+                      setEditingProduct({ ...editingProduct, brand: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
+                  />
+                </div>
+              </div>
 
-                    {!isEditingSanitaryOrFittings && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-slate-700 mb-1 font-medium">Size / Dimensions</label>
-                          <input
-                            type="text"
-                            value={editingProduct.size}
-                            onChange={(e) =>
-                              setEditingProduct({ ...editingProduct, size: e.target.value })
-                            }
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-slate-700 mb-1 font-medium">Finish</label>
-                          <input
-                            type="text"
-                            value={editingProduct.finish}
-                            onChange={(e) =>
-                              setEditingProduct({ ...editingProduct, finish: e.target.value })
-                            }
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                          />
-                        </div>
-                      </div>
-                    )}
+              {/* Model Code & Sub-Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Model Code</label>
+                  <input
+                    type="text"
+                    value={editingProduct.modelCode || ''}
+                    onChange={(e) =>
+                      setEditingProduct({ ...editingProduct, modelCode: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Sub-Category / Type</label>
+                  <input
+                    type="text"
+                    value={editingProduct.subCategory || ''}
+                    onChange={(e) =>
+                      setEditingProduct({ ...editingProduct, subCategory: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
+              </div>
 
-                    {/* Stock Status Toggle */}
-                    <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                      <span className="text-slate-700 font-medium">Inventory Stock Status:</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditingProduct({ ...editingProduct, inStock: !editingProduct.inStock })
+              {/* Size & Finish (always editable for all categories) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Size / Dimensions</label>
+                  <input
+                    type="text"
+                    value={editingProduct.size || ''}
+                    onChange={(e) =>
+                      setEditingProduct({ ...editingProduct, size: e.target.value })
+                    }
+                    placeholder="e.g. 600x1200 mm (2x4 ft)"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Surface Finish</label>
+                  <input
+                    type="text"
+                    value={editingProduct.finish || ''}
+                    onChange={(e) =>
+                      setEditingProduct({ ...editingProduct, finish: e.target.value })
+                    }
+                    placeholder="e.g. High Gloss / Carving Vein"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Extra Tile Specs */}
+              {editingProduct.category === 'tiles' && (
+                <>
+                  <div>
+                    <label className="block text-slate-700 mb-1 font-semibold">Color / Shade Tone</label>
+                    <input
+                      type="text"
+                      value={editingProduct.colorTone || ''}
+                      onChange={(e) =>
+                        setEditingProduct({ ...editingProduct, colorTone: e.target.value })
+                      }
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div>
+                      <label className="block text-slate-600 mb-1 font-medium text-[11px]">Sq.ft / Box</label>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={editingProduct.sqftPerBox || ''}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            sqftPerBox: Number(e.target.value) || undefined,
+                          })
                         }
-                        className={`px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
-                          editingProduct.inStock
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}
-                      >
-                        {editingProduct.inStock ? '✓ In Stock' : '✗ Out of Stock'}
-                      </button>
+                        className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900 font-mono"
+                      />
                     </div>
-                  </>
-                );
-              })()}
+                    <div>
+                      <label className="block text-slate-600 mb-1 font-medium text-[11px]">Tiles / Box</label>
+                      <input
+                        type="number"
+                        value={editingProduct.tilesPerBox || ''}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            tilesPerBox: Number(e.target.value) || undefined,
+                          })
+                        }
+                        className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-600 mb-1 font-medium text-[11px]">Thickness</label>
+                      <input
+                        type="text"
+                        value={editingProduct.thickness || ''}
+                        onChange={(e) =>
+                          setEditingProduct({ ...editingProduct, thickness: e.target.value })
+                        }
+                        className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Key Highlights */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Feature Highlight 1</label>
+                  <input
+                    type="text"
+                    value={editingProduct.features?.[0] || ''}
+                    onChange={(e) => {
+                      const feats = [...(editingProduct.features || [])];
+                      feats[0] = e.target.value;
+                      setEditingProduct({
+                        ...editingProduct,
+                        features: feats,
+                      });
+                    }}
+                    placeholder="e.g. Zero Water Absorption"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-1 font-semibold">Feature Highlight 2</label>
+                  <input
+                    type="text"
+                    value={editingProduct.features?.[1] || ''}
+                    onChange={(e) => {
+                      const feats = [...(editingProduct.features || [])];
+                      if (feats.length === 0) feats.push('');
+                      feats[1] = e.target.value;
+                      setEditingProduct({
+                        ...editingProduct,
+                        features: feats,
+                      });
+                    }}
+                    placeholder="e.g. Stain & Scratch Resistant"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Stock Status Toggle */}
+              <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                <span className="text-slate-700 font-semibold">Inventory Stock Status:</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditingProduct({ ...editingProduct, inStock: !editingProduct.inStock })
+                  }
+                  className={`px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+                    editingProduct.inStock
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}
+                >
+                  {editingProduct.inStock ? '✓ In Stock' : '✗ Out of Stock'}
+                </button>
+              </div>
 
               {/* Multi-Photo Manager in Edit Modal */}
               <div>
-                <label className="block text-slate-700 mb-1 font-semibold text-xs">
-                  Product Photos (Up to 3 Photos)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-700 font-semibold text-xs">
+                    Product Photos (Up to 3 Photos)
+                  </label>
+                  {isCompressingImage && (
+                    <span className="text-[10px] font-bold text-amber-700 animate-pulse">
+                      Optimizing photo...
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   {[0, 1, 2].map((slot) => {
                     const existingImg = editingProduct.images?.[slot] || (slot === 0 ? editingProduct.customImageUrl : '');
                     return (
                       <div key={slot} className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between">
-                        <span className="text-[10px] text-slate-500 mb-1 font-medium">Slot {slot + 1}</span>
+                        <span className="text-[10px] text-slate-500 mb-1 font-medium">Photo {slot + 1}</span>
                         {existingImg ? (
                           <div className="relative aspect-[4/3] rounded overflow-hidden border border-slate-200 bg-slate-100 mb-1.5 shadow-xs">
                             <img src={existingImg} alt={`Slot ${slot + 1}`} className="w-full h-full object-cover" />
@@ -1853,6 +1998,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                             accept="image/*"
                             onChange={(e) => handleImageUpload(e, true, slot)}
                             className="hidden"
+                            disabled={isCompressingImage}
                           />
                         </label>
                       </div>
@@ -1864,16 +2010,21 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
               <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200">
                 <button
                   type="button"
-                  onClick={() => setEditingProduct(null)}
-                  className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 cursor-pointer font-medium"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    onClearInitialEdit?.();
+                  }}
+                  className="px-3.5 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 cursor-pointer font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-500 cursor-pointer shadow-xs"
+                  disabled={isSavingEdit || isCompressingImage}
+                  className="px-5 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-500 disabled:opacity-60 cursor-pointer shadow-xs flex items-center gap-1.5"
                 >
-                  Save Changes
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{isSavingEdit ? 'Saving to Firebase...' : 'Save Changes'}</span>
                 </button>
               </div>
             </form>

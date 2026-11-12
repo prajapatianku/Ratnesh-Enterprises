@@ -12,6 +12,8 @@ import {
   ZoomIn,
   CheckCircle2,
   PackageCheck,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 
 interface ProductDetailModalProps {
@@ -21,6 +23,9 @@ interface ProductDetailModalProps {
   onOpenCalculator: (product: ProductItem) => void;
   onAddToQuote?: (product: ProductItem) => void;
   shopSettings?: ShopSettings;
+  isAdminAuthenticated?: boolean;
+  onEditProduct?: (product: ProductItem) => void;
+  onDeleteProduct?: (id: string) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -30,12 +35,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onOpenCalculator,
   onAddToQuote,
   shopSettings,
+  isAdminAuthenticated = false,
+  onEditProduct,
+  onDeleteProduct,
 }) => {
-  if (!isOpen || !product) return null;
-
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [fitMode, setFitMode] = useState<'contain' | 'cover'>('contain');
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  if (!isOpen || !product) return null;
 
   const isSanitaryOrFittings =
     ['Juliet', 'Microvit', 'Polo'].includes(product.brand) ||
@@ -368,6 +377,39 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <MessageSquare className="w-4 h-4 fill-white" />
                 <span>Get Price & Stock on WhatsApp</span>
               </button>
+
+              {isAdminAuthenticated && (
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => onEditProduct?.(product)}
+                    className="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Details</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirmDelete) {
+                        setConfirmDelete(false);
+                        onDeleteProduct?.(product.id);
+                      } else {
+                        setConfirmDelete(true);
+                        setTimeout(() => setConfirmDelete(false), 3500);
+                      }
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors border ${
+                      confirmDelete
+                        ? 'bg-red-600 text-white border-red-700'
+                        : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                    }`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{confirmDelete ? 'Confirm Delete?' : 'Delete Product'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

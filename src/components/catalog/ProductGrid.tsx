@@ -9,6 +9,7 @@ interface ProductGridProps {
   onOpenDetails: (product: ProductItem) => void;
   onAddToQuote: (product: ProductItem) => void;
   onOpenAdminPortal: () => void;
+  onOpenAddProduct?: () => void;
   isAdminMode: boolean;
   onToggleAdminMode: () => void;
   onEditProduct: (product: ProductItem) => void;
@@ -25,6 +26,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   onOpenDetails,
   onAddToQuote,
   onOpenAdminPortal,
+  onOpenAddProduct,
   isAdminMode,
   onToggleAdminMode,
   onEditProduct,
@@ -103,15 +105,38 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           </p>
         </div>
 
-        {/* Optional Owner Quick Action (Only visible when logged in) */}
+        {/* Owner Quick Actions (Only visible when logged in) */}
         {isAdminAuthenticated && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onOpenAddProduct && (
+              <button
+                type="button"
+                onClick={onOpenAddProduct}
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Add Tile / Product</span>
+              </button>
+            )}
             <button
-              onClick={onOpenAdminPortal}
-              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              type="button"
+              onClick={onToggleAdminMode}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border cursor-pointer ${
+                isAdminMode
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+              }`}
+              title="Show/Hide Edit & Delete buttons on cards"
             >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>Manage Products</span>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Card Edit/Delete: {isAdminMode ? 'ON' : 'OFF'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenAdminPortal}
+              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer"
+            >
+              Control Hub
             </button>
           </div>
         )}
