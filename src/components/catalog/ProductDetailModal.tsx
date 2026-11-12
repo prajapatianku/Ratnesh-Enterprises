@@ -42,7 +42,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [fitMode, setFitMode] = useState<'contain' | 'cover'>('contain');
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!isOpen || !product) return null;
 
@@ -390,23 +389,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (confirmDelete) {
-                        setConfirmDelete(false);
-                        onDeleteProduct?.(product.id);
-                      } else {
-                        setConfirmDelete(true);
-                        setTimeout(() => setConfirmDelete(false), 3500);
-                      }
-                    }}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors border ${
-                      confirmDelete
-                        ? 'bg-red-600 text-white border-red-700'
-                        : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
-                    }`}
+                    onClick={() => onDeleteProduct?.(product.id)}
+                    className="py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors border bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>{confirmDelete ? 'Confirm Delete?' : 'Delete Product'}</span>
+                    <span>Delete Product</span>
                   </button>
                 </div>
               )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ProductItem } from '../../types';
 import { getTileTextureSvg } from '../../utils/textureGenerators';
 import { BrandLogo } from '../brands/BrandLogos';
@@ -21,8 +21,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onEditProduct,
   onDeleteProduct,
 }) => {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
   const primaryImage = product.images?.[0] || product.customImageUrl;
   const textureSrc = getTileTextureSvg(
     product.texturePattern,
@@ -48,13 +46,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirmDelete) {
-      setConfirmDelete(false);
-      onDeleteProduct?.(product.id);
-    } else {
-      setConfirmDelete(true);
-      setTimeout(() => setConfirmDelete(false), 3500);
-    }
+    onDeleteProduct?.(product.id);
   };
 
   return (
@@ -138,15 +130,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <button
               type="button"
               onClick={handleDeleteClick}
-              className={`px-2 py-1.5 rounded-lg border shadow-sm cursor-pointer transition-all text-[10px] font-bold flex items-center gap-1 ${
-                confirmDelete
-                  ? 'bg-red-600 text-white border-red-700 animate-pulse'
-                  : 'bg-white/95 hover:bg-red-50 text-red-600 border-slate-300'
-              }`}
-              title={confirmDelete ? 'Tap again to confirm delete' : 'Delete Tile'}
+              className="p-1.5 rounded-lg border shadow-sm cursor-pointer transition-all bg-white/95 hover:bg-red-50 text-red-600 border-slate-300"
+              title="Delete Tile"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              {confirmDelete && <span>Confirm?</span>}
             </button>
           </div>
         )}
@@ -207,14 +194,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <button
                 type="button"
                 onClick={handleDeleteClick}
-                className={`py-1.5 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors border ${
-                  confirmDelete
-                    ? 'bg-red-600 text-white border-red-700'
-                    : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
-                }`}
+                className="py-1.5 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer transition-colors border bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200"
               >
                 <Trash2 className="w-3 h-3" />
-                <span>{confirmDelete ? 'Confirm?' : 'Delete'}</span>
+                <span>Delete</span>
               </button>
             </div>
           )}

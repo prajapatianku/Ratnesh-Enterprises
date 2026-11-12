@@ -15,7 +15,7 @@ import { QuoteDrawer } from './components/quote/QuoteDrawer';
 import { ShowroomShowcase } from './components/showroom/ShowroomShowcase';
 import { AboutUsSection } from './components/about/AboutUsSection';
 import { Footer } from './components/footer/Footer';
-import { MessageSquare, Sparkles, Check, ShieldCheck, Cloud } from 'lucide-react';
+import { MessageSquare, Sparkles, Check, ShieldCheck, Cloud, Trash2, X } from 'lucide-react';
 import {
   testConnection,
   subscribeToProducts,
@@ -153,6 +153,8 @@ export default function App() {
   const [isAdminPortalOpen, setIsAdminPortalOpen] = useState<boolean>(false);
   const [productToEdit, setProductToEdit] = useState<ProductItem | null>(null);
   const [adminInitialTab, setAdminInitialTab] = useState<'inventory' | 'add' | 'banners' | 'video' | 'settings'>('inventory');
+  const [pendingDeleteProduct, setPendingDeleteProduct] = useState<ProductItem | null>(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState<boolean>(false);
 
   // Modals & Panels
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
@@ -463,18 +465,53 @@ export default function App() {
     }
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    if (activeDetailProduct?.id === id) {
-      setIsDetailModalOpen(false);
-      setActiveDetailProduct(null);
+  const handleDeleteProduct = (id: string) => {
+    const target = products.find((p) => p.id === id);
+    if (target) {
+      setPendingDeleteProduct(target);
+    } else {
+      // Fallback if product not found in state
+      setPendingDeleteProduct({
+        id,
+        name: 'Selected Product',
+        modelCode: '',
+        brand: '',
+        category: 'tiles',
+        subCategory: '',
+        size: '',
+        finish: '',
+        pricePerUnit: 0,
+        unitLabel: 'sq.ft',
+        colorTone: '',
+        texturePattern: 'statuario',
+        features: [],
+        inStock: true,
+      });
     }
+  };
+
+  const handleConfirmDeleteProduct = async () => {
+    if (!pendingDeleteProduct || isDeletingProduct) return;
+    const id = pendingDeleteProduct.id;
+    const deletedName = pendingDeleteProduct.name;
+    setIsDeletingProduct(true);
     try {
       await deleteProductFromCloud(id);
-      showToast('✓ Deleted permanently from Firebase!');
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      if (activeDetailProduct?.id === id) {
+        setIsDetailModalOpen(false);
+        setActiveDetailProduct(null);
+      }
+      if (productToEdit?.id === id) {
+        setProductToEdit(null);
+      }
+      setPendingDeleteProduct(null);
+      showToast(`✓ Deleted "${deletedName}" permanently from Firebase!`);
     } catch (err) {
       console.error('Firebase delete failed:', err);
-      showToast(`Delete error in Firebase: ${err instanceof Error ? err.message : 'Check connection'}`);
+      showToast(`Delete failed in Firebase: ${err instanceof Error ? err.message : 'Check connection'}`);
+    } finally {
+      setIsDeletingProduct(false);
     }
   };
 
@@ -687,6 +724,68 @@ export default function App() {
           onClearInitialEdit={() => setProductToEdit(null)}
           initialTab={adminInitialTab}
         />
+      )}
+
+      {/* DELETE PRODUCT CONFIRMATION MODAL (Appears over all modals & cards) */}
+      {pendingDeleteProduct && (
+        <div
+          onClick={() => !isDeletingProduct && setPendingDeleteProduct(null)}
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl shadow-2xl p-5 flex flex-col gap-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Delete Product?</h3>
+                  <p className="text-xs text-slate-500">This removes it permanently from Firebase.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isDeletingProduct}
+                onClick={() => setPendingDeleteProduct(null)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs">
+              <div className="font-bold text-slate-900 truncate">{pendingDeleteProduct.name}</div>
+              {(pendingDeleteProduct.brand || pendingDeleteProduct.modelCode) && (
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {pendingDeleteProduct.brand} {pendingDeleteProduct.modelCode ? `· ${pendingDeleteProduct.modelCode}` : ''}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isDeletingProduct}
+                onClick={() => setPendingDeleteProduct(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingProduct}
+                onClick={handleConfirmDeleteProduct}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-60"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingProduct ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* FLOATING ACTION: WhatsApp Direct Showroom Chat */}

@@ -69,8 +69,6 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
   const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   React.useEffect(() => {
     setActiveTab(initialTab);
@@ -240,24 +238,6 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
       // toast already shown by parent
     } finally {
       setIsSavingEdit(false);
-    }
-  };
-
-  // Handle two-tap inline Delete inside Inventory
-  const handleConfirmDelete = async (id: string) => {
-    if (confirmDeleteId === id) {
-      setDeletingId(id);
-      setConfirmDeleteId(null);
-      try {
-        await onDeleteProduct(id);
-      } finally {
-        setDeletingId(null);
-      }
-    } else {
-      setConfirmDeleteId(id);
-      setTimeout(() => {
-        setConfirmDeleteId((curr) => (curr === id ? null : curr));
-      }, 4000);
     }
   };
 
@@ -553,8 +533,6 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                 {filteredInventory.map((item) => {
                   const primaryImg = item.images?.[0] || item.customImageUrl;
                   const img = getTileTextureSvg(item.texturePattern, primaryImg, item.finish);
-                  const isConfirming = confirmDeleteId === item.id;
-                  const isDeleting = deletingId === item.id;
 
                   return (
                     <div
@@ -601,16 +579,11 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                           </button>
                           <button
                             type="button"
-                            disabled={isDeleting}
-                            onClick={() => handleConfirmDelete(item.id)}
-                            className={`px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 cursor-pointer border transition-colors disabled:opacity-50 ${
-                              isConfirming
-                                ? 'bg-red-600 text-white border-red-700'
-                                : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
-                            }`}
+                            onClick={() => onDeleteProduct(item.id)}
+                            className="px-3 py-1.5 rounded-lg font-bold text-[11px] flex items-center gap-1 cursor-pointer border transition-colors bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200"
                           >
                             <Trash2 className="w-3 h-3" />
-                            <span>{isDeleting ? 'Deleting...' : isConfirming ? 'Confirm?' : 'Delete'}</span>
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
@@ -638,8 +611,6 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                         {filteredInventory.map((item) => {
                           const primaryImg = item.images?.[0] || item.customImageUrl;
                           const img = getTileTextureSvg(item.texturePattern, primaryImg, item.finish);
-                          const isConfirming = confirmDeleteId === item.id;
-                          const isDeleting = deletingId === item.id;
 
                           return (
                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
@@ -705,17 +676,12 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                                   </button>
                                   <button
                                     type="button"
-                                    disabled={isDeleting}
-                                    onClick={() => handleConfirmDelete(item.id)}
-                                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer border disabled:opacity-50 ${
-                                      isConfirming
-                                        ? 'bg-red-600 text-white border-red-700'
-                                        : 'text-rose-600 bg-rose-50 hover:bg-rose-100 border-rose-200'
-                                    }`}
-                                    title={isConfirming ? 'Click again to delete permanently' : 'Delete item'}
+                                    onClick={() => onDeleteProduct(item.id)}
+                                    className="px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-colors cursor-pointer border text-rose-600 bg-rose-50 hover:bg-rose-100 border-rose-200"
+                                    title="Delete item"
                                   >
                                     <Trash2 className="w-3 h-3" />
-                                    <span>{isDeleting ? 'Deleting...' : isConfirming ? 'Confirm?' : 'Delete'}</span>
+                                    <span>Delete</span>
                                   </button>
                                 </div>
                               </td>
