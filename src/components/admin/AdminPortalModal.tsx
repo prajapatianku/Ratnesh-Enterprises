@@ -5,7 +5,8 @@ import {
   ProductCategory,
   TexturePattern,
   ShopSettings,
-  BannerSlide
+  BannerSlide,
+  STANDARD_TILE_SIZES
 } from '../../types';
 import {
   ShieldAlert,
@@ -35,17 +36,6 @@ import { getTileTextureSvg } from '../../utils/textureGenerators';
 import { compressImageFile, compressBannerDataUrl } from '../../utils/imageCompressor';
 import { saveLocalVideoBlob } from '../../utils/videoStorage';
 import { DEFAULT_BANNER_SLIDES } from '../hero/HeroSlider';
-
-export const STANDARD_TILE_SIZES = [
-  '2X4',
-  '2X2',
-  '12x18',
-  '16x16',
-  '12x12(1x1)',
-  '2X3',
-  '8x12',
-  '6x6',
-];
 
 type AdminTab = 'inventory' | 'add' | 'banners' | 'video' | 'settings';
 

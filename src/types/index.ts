@@ -39,6 +39,17 @@ export type TexturePattern =
   | 'armani_brown'
   | 'custom';
 
+export const STANDARD_TILE_SIZES = [
+  '2X4',
+  '2X2',
+  '12x18',
+  '16x16',
+  '12x12(1x1)',
+  '2X3',
+  '8x12',
+  '6x6',
+] as const;
+
 export interface ProductItem {
   id: string;
   name: string;

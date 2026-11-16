@@ -1,18 +1,7 @@
 import React, { useState } from 'react';
-import { ProductItem, Brand, ProductCategory, TexturePattern } from '../../types';
+import { ProductItem, Brand, ProductCategory, TexturePattern, STANDARD_TILE_SIZES } from '../../types';
 import { PlusCircle, X, Sparkles, Upload, Image as ImageIcon, Trash2, CheckCircle2 } from 'lucide-react';
 import { compressImageFile } from '../../utils/imageCompressor';
-
-export const STANDARD_TILE_SIZES = [
-  '2X4',
-  '2X2',
-  '12x18',
-  '16x16',
-  '12x12(1x1)',
-  '2X3',
-  '8x12',
-  '6x6',
-];
 
 interface AddProductModalProps {
   isOpen: boolean;
