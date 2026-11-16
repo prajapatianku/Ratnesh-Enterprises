@@ -36,6 +36,17 @@ import { compressImageFile, compressBannerDataUrl } from '../../utils/imageCompr
 import { saveLocalVideoBlob } from '../../utils/videoStorage';
 import { DEFAULT_BANNER_SLIDES } from '../hero/HeroSlider';
 
+export const STANDARD_TILE_SIZES = [
+  '2X4',
+  '2X2',
+  '12x18',
+  '16x16',
+  '12x12(1x1)',
+  '2X3',
+  '8x12',
+  '6x6',
+];
+
 type AdminTab = 'inventory' | 'add' | 'banners' | 'video' | 'settings';
 
 interface AdminPortalModalProps {
@@ -97,18 +108,18 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
   const [modelCode, setModelCode] = useState('');
   const [category, setCategory] = useState<ProductCategory>('tiles');
   const [subCategory, setSubCategory] = useState('Carving PGVT Vitrified Slab');
-  const [size, setSize] = useState('600x1200 mm (2x4 ft)');
+  const [size, setSize] = useState('2X4');
   const [finish, setFinish] = useState('High Gloss');
   const [sqftPerBox, setSqftPerBox] = useState<number>(15.5);
   const [tilesPerBox, setTilesPerBox] = useState<number>(2);
   const [thickness, setThickness] = useState('9 mm');
-  const [colorTone, setColorTone] = useState('Statuario White & Grey Veins');
+  const [colorTone, setColorTone] = useState('');
   const [texturePattern, setTexturePattern] = useState<TexturePattern>('statuario');
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>(['', '', '']);
   const [compressingSlot, setCompressingSlot] = useState<number | null>(null);
-  const [feature1, setFeature1] = useState('Zero Water Absorption (<0.05%)');
-  const [feature2, setFeature2] = useState('Nano Glaze Stain Resistance');
+  const [feature1, setFeature1] = useState('');
+  const [feature2, setFeature2] = useState('');
   const [inStock, setInStock] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
 
@@ -807,45 +818,77 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
 
               {/* 3. Size & Surface Finish (Tiles only) */}
               {!isSanitaryOrFittings && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-3">
                   <div>
-                    <label className="block text-slate-700 mb-1 font-semibold">Tile Size / Dimensions</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-slate-700 font-semibold text-xs">
+                        Tile Size / Dimensions <span className="text-amber-600 font-bold">({size || '2X4'})</span>
+                      </label>
+                      <span className="text-[10px] text-slate-500 font-medium">← Scroll to select size →</span>
+                    </div>
+                    {/* Horizontal scrollable selector */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 scrollbar-none">
+                      {STANDARD_TILE_SIZES.map((s) => {
+                        const isSelected = size === s || size.toLowerCase() === s.toLowerCase();
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => {
+                              setSize(s);
+                              if (s === '2X4') { setSqftPerBox(15.5); setTilesPerBox(2); }
+                              else if (s === '2X2') { setSqftPerBox(16); setTilesPerBox(4); }
+                              else if (s === '12x18') { setSqftPerBox(12); setTilesPerBox(6); }
+                              else if (s === '16x16') { setSqftPerBox(14.2); setTilesPerBox(8); }
+                              else if (s === '12x12(1x1)') { setSqftPerBox(10); setTilesPerBox(10); }
+                              else if (s === '2X3') { setSqftPerBox(18); setTilesPerBox(3); }
+                              else if (s === '8x12') { setSqftPerBox(10); setTilesPerBox(10); }
+                              else if (s === '6x6') { setSqftPerBox(5); setTilesPerBox(20); }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-xs scale-105'
+                                : 'bg-white text-slate-700 border-slate-300 hover:border-amber-400 hover:bg-amber-50/50'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        );
+                      })}
+                    </div>
                     <input
                       type="text"
                       value={size}
                       onChange={(e) => setSize(e.target.value)}
-                      placeholder="e.g. 600x1200 mm (2x4 ft)"
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white"
+                      placeholder="Selected size (e.g. 2X4)"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-semibold">Surface Finish</label>
-                    <select
-                      value={finish}
-                      onChange={(e) => setFinish(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
-                    >
-                      <option value="High Gloss">High Gloss / Mirror Polished</option>
-                      <option value="Carving Vein">Carving Vein Glaze</option>
-                      <option value="Matte / Satin">Silk Matte / Honed</option>
-                      <option value="Rustic Anti-Skid">Rustic Anti-Skid / Paver</option>
-                      <option value="Wooden Plank">Natural Wood Grain</option>
-                    </select>
-                  </div>
-                </div>
-              )}
 
-              {/* Color / Shade Tone (Tiles only) */}
-              {!isSanitaryOrFittings && (
-                <div>
-                  <label className="block text-slate-700 mb-1 font-semibold">Color / Shade Tone</label>
-                  <input
-                    type="text"
-                    value={colorTone}
-                    onChange={(e) => setColorTone(e.target.value)}
-                    placeholder="e.g. Alabaster White & Golden Veins"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white"
-                  />
+                  <div>
+                    <label className="block text-slate-700 mb-1.5 font-semibold text-xs">
+                      Surface Finish <span className="text-amber-600 font-bold">({finish || 'High Gloss'})</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['High Gloss', 'Matt'].map((f) => {
+                        const isSelected = finish.toLowerCase().includes(f.toLowerCase());
+                        return (
+                          <button
+                            key={f}
+                            type="button"
+                            onClick={() => setFinish(f)}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer ${
+                              isSelected
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                                : 'bg-white text-slate-700 border-slate-300 hover:border-amber-400 hover:bg-amber-50/50'
+                            }`}
+                          >
+                            {f}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1769,131 +1812,159 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                 </div>
               </div>
 
-              {/* Size & Finish (always editable for all categories) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 mb-1 font-semibold">Size / Dimensions</label>
-                  <input
-                    type="text"
-                    value={editingProduct.size || ''}
-                    onChange={(e) =>
-                      setEditingProduct({ ...editingProduct, size: e.target.value })
-                    }
-                    placeholder="e.g. 600x1200 mm (2x4 ft)"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 mb-1 font-semibold">Surface Finish</label>
-                  <input
-                    type="text"
-                    value={editingProduct.finish || ''}
-                    onChange={(e) =>
-                      setEditingProduct({ ...editingProduct, finish: e.target.value })
-                    }
-                    placeholder="e.g. High Gloss / Carving Vein"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Extra Tile Specs */}
-              {editingProduct.category === 'tiles' && (
-                <>
-                  <div>
-                    <label className="block text-slate-700 mb-1 font-semibold">Color / Shade Tone</label>
-                    <input
-                      type="text"
-                      value={editingProduct.colorTone || ''}
-                      onChange={(e) =>
-                        setEditingProduct({ ...editingProduct, colorTone: e.target.value })
-                      }
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              {/* Size & Finish (always editable) */}
+              <div className="flex flex-col gap-3">
+                {editingProduct.category === 'tiles' ? (
+                  <>
                     <div>
-                      <label className="block text-slate-600 mb-1 font-medium text-[11px]">Sq.ft / Box</label>
-                      <input
-                        type="number"
-                        step="0.05"
-                        value={editingProduct.sqftPerBox || ''}
-                        onChange={(e) =>
-                          setEditingProduct({
-                            ...editingProduct,
-                            sqftPerBox: Number(e.target.value) || undefined,
-                          })
-                        }
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-600 mb-1 font-medium text-[11px]">Tiles / Box</label>
-                      <input
-                        type="number"
-                        value={editingProduct.tilesPerBox || ''}
-                        onChange={(e) =>
-                          setEditingProduct({
-                            ...editingProduct,
-                            tilesPerBox: Number(e.target.value) || undefined,
-                          })
-                        }
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-600 mb-1 font-medium text-[11px]">Thickness</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-slate-700 font-semibold text-xs">
+                          Tile Size / Dimensions <span className="text-amber-600 font-bold">({editingProduct.size || '2X4'})</span>
+                        </label>
+                        <span className="text-[10px] text-slate-500 font-medium">← Scroll to select size →</span>
+                      </div>
+                      <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 scrollbar-none">
+                        {STANDARD_TILE_SIZES.map((s) => {
+                          const isSelected = editingProduct.size === s || editingProduct.size?.toLowerCase() === s.toLowerCase();
+                          return (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => {
+                                let sqft = editingProduct.sqftPerBox;
+                                let tiles = editingProduct.tilesPerBox;
+                                if (s === '2X4') { sqft = 15.5; tiles = 2; }
+                                else if (s === '2X2') { sqft = 16; tiles = 4; }
+                                else if (s === '12x18') { sqft = 12; tiles = 6; }
+                                else if (s === '16x16') { sqft = 14.2; tiles = 8; }
+                                else if (s === '12x12(1x1)') { sqft = 10; tiles = 10; }
+                                else if (s === '2X3') { sqft = 18; tiles = 3; }
+                                else if (s === '8x12') { sqft = 10; tiles = 10; }
+                                else if (s === '6x6') { sqft = 5; tiles = 20; }
+                                setEditingProduct({ ...editingProduct, size: s, sqftPerBox: sqft, tilesPerBox: tiles });
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all border cursor-pointer ${
+                                isSelected
+                                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs scale-105'
+                                  : 'bg-white text-slate-700 border-slate-300 hover:border-amber-400 hover:bg-amber-50/50'
+                              }`}
+                            >
+                              {s}
+                            </button>
+                          );
+                        })}
+                      </div>
                       <input
                         type="text"
-                        value={editingProduct.thickness || ''}
+                        value={editingProduct.size || ''}
                         onChange={(e) =>
-                          setEditingProduct({ ...editingProduct, thickness: e.target.value })
+                          setEditingProduct({ ...editingProduct, size: e.target.value })
                         }
-                        className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900"
+                        placeholder="e.g. 2X4"
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 mb-1.5 font-semibold text-xs">
+                        Surface Finish <span className="text-amber-600 font-bold">({editingProduct.finish || 'High Gloss'})</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['High Gloss', 'Matt'].map((f) => {
+                          const isSelected = (editingProduct.finish || '').toLowerCase().includes(f.toLowerCase());
+                          return (
+                            <button
+                              key={f}
+                              type="button"
+                              onClick={() =>
+                                setEditingProduct({ ...editingProduct, finish: f })
+                              }
+                              className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer ${
+                                isSelected
+                                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                                  : 'bg-white text-slate-700 border-slate-300 hover:border-amber-400 hover:bg-amber-50/50'
+                              }`}
+                            >
+                              {f}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 mb-1 font-semibold text-xs">Size / Dimensions</label>
+                      <input
+                        type="text"
+                        value={editingProduct.size || ''}
+                        onChange={(e) =>
+                          setEditingProduct({ ...editingProduct, size: e.target.value })
+                        }
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-700 mb-1 font-semibold text-xs">Finish / Material</label>
+                      <input
+                        type="text"
+                        value={editingProduct.finish || ''}
+                        onChange={(e) =>
+                          setEditingProduct({ ...editingProduct, finish: e.target.value })
+                        }
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white"
                       />
                     </div>
                   </div>
-                </>
-              )}
-
-              {/* Key Highlights */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-slate-700 mb-1 font-semibold">Feature Highlight 1</label>
-                  <input
-                    type="text"
-                    value={editingProduct.features?.[0] || ''}
-                    onChange={(e) => {
-                      const feats = [...(editingProduct.features || [])];
-                      feats[0] = e.target.value;
-                      setEditingProduct({
-                        ...editingProduct,
-                        features: feats,
-                      });
-                    }}
-                    placeholder="e.g. Zero Water Absorption"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-700 mb-1 font-semibold">Feature Highlight 2</label>
-                  <input
-                    type="text"
-                    value={editingProduct.features?.[1] || ''}
-                    onChange={(e) => {
-                      const feats = [...(editingProduct.features || [])];
-                      if (feats.length === 0) feats.push('');
-                      feats[1] = e.target.value;
-                      setEditingProduct({
-                        ...editingProduct,
-                        features: feats,
-                      });
-                    }}
-                    placeholder="e.g. Stain & Scratch Resistant"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-                  />
-                </div>
+                )}
               </div>
+
+              {/* Extra Tile Specs (Box coverage & thickness) */}
+              {editingProduct.category === 'tiles' && (
+                <div className="grid grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="block text-slate-600 mb-1 font-medium text-[11px]">Sq.ft / Box</label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      value={editingProduct.sqftPerBox || ''}
+                      onChange={(e) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          sqftPerBox: Number(e.target.value) || undefined,
+                        })
+                      }
+                      className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 mb-1 font-medium text-[11px]">Tiles / Box</label>
+                    <input
+                      type="number"
+                      value={editingProduct.tilesPerBox || ''}
+                      onChange={(e) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          tilesPerBox: Number(e.target.value) || undefined,
+                        })
+                      }
+                      className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 mb-1 font-medium text-[11px]">Thickness</label>
+                    <input
+                      type="text"
+                      value={editingProduct.thickness || ''}
+                      onChange={(e) =>
+                        setEditingProduct({ ...editingProduct, thickness: e.target.value })
+                      }
+                      className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-900"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Stock Status Toggle */}
               <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg">

@@ -611,21 +611,7 @@ export default function App() {
           onSelectBrandFilter={setSelectedBrandFilter}
         />
 
-        {/* Authorized Brand Partners Showcase & Logos */}
-        <BrandShowcaseSection
-          onSelectBrandFilter={handleSelectBrandFilter}
-          activeBrandFilter={selectedBrandFilter}
-        />
-
-        {/* Ganesh Ceramic Style Showroom Video Tour Section */}
-        <ShowroomVideoSection
-          shopSettings={shopSettings}
-          onUpdateSettings={handleUpdateSettings}
-          onOpenAdminPortal={() => handleOpenAdminPortal('video')}
-          isAdminAuthenticated={isAdminAuthenticated}
-        />
-
-        {/* Product Catalog Grid with Filters */}
+        {/* Product Catalog Grid with Filters (Directly below Hero Slider) */}
         <ProductGrid
           products={products}
           onOpenDetails={handleOpenDetails}
@@ -649,7 +635,21 @@ export default function App() {
           onSelectCategory={handleSelectCategory}
         />
 
-        {/* Who We Are & Management Leadership */}
+        {/* Authorized Brand Partners Showcase & Logos (Below Catalog) */}
+        <BrandShowcaseSection
+          onSelectBrandFilter={handleSelectBrandFilter}
+          activeBrandFilter={selectedBrandFilter}
+        />
+
+        {/* Showroom Experience / Video Tour Section (Above About Our Enterprise) */}
+        <ShowroomVideoSection
+          shopSettings={shopSettings}
+          onUpdateSettings={handleUpdateSettings}
+          onOpenAdminPortal={() => handleOpenAdminPortal('video')}
+          isAdminAuthenticated={isAdminAuthenticated}
+        />
+
+        {/* Who We Are & Management Leadership (About Our Enterprise) */}
         <AboutUsSection shopSettings={shopSettings} />
 
         {/* Showroom Experience, Consultation & Visit Details */}

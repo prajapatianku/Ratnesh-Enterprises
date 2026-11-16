@@ -161,7 +161,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </h3>
 
           <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">
-            {!isSanitaryOrFittings ? (product.colorTone || 'Polished Glaze') : (product.features?.[0] || 'Authorized Showroom Stock')}
+            {!isSanitaryOrFittings ? (product.colorTone || product.finish || 'Polished Glaze') : (product.features?.[0] || 'Authorized Showroom Stock')}
           </p>
         </div>
 

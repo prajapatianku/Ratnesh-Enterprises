@@ -3,6 +3,17 @@ import { ProductItem, Brand, ProductCategory, TexturePattern } from '../../types
 import { PlusCircle, X, Sparkles, Upload, Image as ImageIcon, Trash2, CheckCircle2 } from 'lucide-react';
 import { compressImageFile } from '../../utils/imageCompressor';
 
+export const STANDARD_TILE_SIZES = [
+  '2X4',
+  '2X2',
+  '12x18',
+  '16x16',
+  '12x12(1x1)',
+  '2X3',
+  '8x12',
+  '6x6',
+];
+
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -21,17 +32,17 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [modelCode, setModelCode] = useState('');
   const [category, setCategory] = useState<ProductCategory>('tiles');
   const [subCategory, setSubCategory] = useState('Carving PGVT Vitrified');
-  const [size, setSize] = useState('600x1200 mm (2x4 ft)');
+  const [size, setSize] = useState('2X4');
   const [finish, setFinish] = useState('High Gloss');
-  const [colorTone, setColorTone] = useState('Italian Marble Veins');
+  const [colorTone, setColorTone] = useState('');
   const [texturePattern, setTexturePattern] = useState<TexturePattern>('statuario');
   
   // Up to 3 photos
   const [uploadedImages, setUploadedImages] = useState<string[]>(['', '', '']);
   const [compressingSlot, setCompressingSlot] = useState<number | null>(null);
   
-  const [feature1, setFeature1] = useState('Zero Water Absorption (<0.05%)');
-  const [feature2, setFeature2] = useState('Nano Glaze Stain Resistance');
+  const [feature1, setFeature1] = useState('');
+  const [feature2, setFeature2] = useState('');
 
   const isSanitaryOrFittings =
     ['Juliet', 'Microvit', 'Polo'].includes(brand) ||
@@ -246,46 +257,67 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
           {/* Size & Finish (TILES ONLY) */}
           {!isSanitaryOrFittings && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Size / Dimensions</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-slate-700 font-semibold text-xs">
+                    Tile Size / Dimensions <span className="text-amber-600 font-bold">({size || '2X4'})</span>
+                  </label>
+                  <span className="text-[10px] text-slate-500 font-medium">← Scroll to select size →</span>
+                </div>
+                {/* Horizontal scrollable selector */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-0.5 scrollbar-none">
+                  {STANDARD_TILE_SIZES.map((s) => {
+                    const isSelected = size === s || size.toLowerCase() === s.toLowerCase();
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSize(s)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all border cursor-pointer ${
+                          isSelected
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs scale-105'
+                            : 'bg-white text-slate-700 border-slate-300 hover:border-amber-400 hover:bg-amber-50/50'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
                 <input
                   type="text"
                   value={size}
                   onChange={(e) => setSize(e.target.value)}
-                  placeholder="e.g. 600x1200 mm (2x4 ft)"
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  placeholder="Selected size (e.g. 2X4)"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 text-xs focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 font-semibold">Finish</label>
-                <select
-                  value={finish}
-                  onChange={(e) => setFinish(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white font-medium"
-                >
-                  <option value="High Gloss">High Gloss / Mirror Polish</option>
-                  <option value="Carving Vein">Carving Vein Glaze</option>
-                  <option value="Matte / Satin">Silk Matte / Honed</option>
-                  <option value="Rustic Anti-Skid">Rustic Anti-Skid Paver</option>
-                  <option value="Wooden Plank">Natural Wood Grain</option>
-                </select>
+                <label className="block text-slate-700 mb-1.5 font-semibold text-xs">
+                  Surface Finish <span className="text-amber-600 font-bold">({finish || 'High Gloss'})</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {['High Gloss', 'Matt'].map((f) => {
+                    const isSelected = finish.toLowerCase().includes(f.toLowerCase());
+                    return (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setFinish(f)}
+                        className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all text-center cursor-pointer ${
+                          isSelected
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-300 hover:border-amber-400 hover:bg-amber-50/50'
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Color Tone (TILES ONLY) */}
-          {!isSanitaryOrFittings && (
-            <div>
-              <label className="block text-slate-700 mb-1 font-semibold">Color / Shade Tone</label>
-              <input
-                type="text"
-                value={colorTone}
-                onChange={(e) => setColorTone(e.target.value)}
-                placeholder="e.g. Warm Calacatta White & Gold"
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-              />
             </div>
           )}
 
@@ -390,28 +422,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Key Features */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-700 mb-1 font-medium">Key Feature 1</label>
-              <input
-                type="text"
-                value={feature1}
-                onChange={(e) => setFeature1(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-slate-700 mb-1 font-medium">Key Feature 2</label>
-              <input
-                type="text"
-                value={feature2}
-                onChange={(e) => setFeature2(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white"
-              />
-            </div>
           </div>
 
           {/* Submit */}

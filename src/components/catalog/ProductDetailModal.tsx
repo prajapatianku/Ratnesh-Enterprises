@@ -301,10 +301,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <span className="text-slate-500 block text-[11px]">Surface Finish</span>
                         <span className="font-bold text-slate-900">{product.finish}</span>
                       </div>
-                      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                        <span className="text-slate-500 block text-[11px]">Color / Shade Tone</span>
-                        <span className="font-bold text-slate-900 truncate block">{product.colorTone || 'Polished Marble'}</span>
-                      </div>
+                      {product.colorTone ? (
+                        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                          <span className="text-slate-500 block text-[11px]">Color / Shade Tone</span>
+                          <span className="font-bold text-slate-900 truncate block">{product.colorTone}</span>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                          <span className="text-slate-500 block text-[11px]">Authorized Brand</span>
+                          <span className="font-bold text-slate-900 truncate block">{product.brand}</span>
+                        </div>
+                      )}
                       <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                         <span className="text-slate-500 block text-[11px]">Box Coverage</span>
                         <span className="font-bold text-slate-900">

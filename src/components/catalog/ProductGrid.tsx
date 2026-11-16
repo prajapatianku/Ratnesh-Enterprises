@@ -74,12 +74,12 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       // Search query
       if (searchQuery.trim().length > 0) {
         const query = searchQuery.toLowerCase();
-        const matchesName = p.name.toLowerCase().includes(query);
-        const matchesBrand = p.brand.toLowerCase().includes(query);
-        const matchesCode = p.modelCode.toLowerCase().includes(query);
-        const matchesSize = p.size.toLowerCase().includes(query);
-        const matchesColor = p.colorTone.toLowerCase().includes(query);
-        const matchesSubcat = p.subCategory.toLowerCase().includes(query);
+        const matchesName = (p.name || '').toLowerCase().includes(query);
+        const matchesBrand = (p.brand || '').toLowerCase().includes(query);
+        const matchesCode = (p.modelCode || '').toLowerCase().includes(query);
+        const matchesSize = (p.size || '').toLowerCase().includes(query);
+        const matchesColor = (p.colorTone || '').toLowerCase().includes(query);
+        const matchesSubcat = (p.subCategory || '').toLowerCase().includes(query);
         return matchesName || matchesBrand || matchesCode || matchesSize || matchesColor || matchesSubcat;
       }
 
