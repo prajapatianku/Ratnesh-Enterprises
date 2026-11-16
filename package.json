@@ -4,11 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "node ./node_modules/tsx/dist/cli.mjs server.ts",
+    "dev:vite": "node ./node_modules/vite/bin/vite.js --port 3000 --host",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "start": "tsx server.ts",
+    "start": "node ./node_modules/tsx/dist/cli.mjs server.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
